@@ -2,23 +2,31 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>합주 예약</title>
+  <title>합주 예약 시스템</title>
   <link rel="stylesheet" href="css/style.css">
-  <!-- Firebase App (the core Firebase SDK) -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <style>
+    /* 스케줄 테이블 스타일 */
+    .schedule-table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    .schedule-table th,
+    .schedule-table td {
+      border: 1px solid #ccc;
+      padding: 6px;
+      text-align: center;
+      min-width: 70px;
+    }
+    .schedule-table th { background: #f7f7f7; }
+  </style>
 </head>
 <body>
   <h1>합주 예약 시스템</h1>
 
   <!-- 로그인/로그아웃 버튼 -->
-  <button id="btn-login">로그인</button>
+  <button id="btn-login">로그인 (Google)</button>
   <button id="btn-logout" style="display:none;">로그아웃</button>
 
-  <!-- 관리자 전용 슬롯 생성/관리 UI -->
+  <!-- 관리자 UI -->
   <div id="adminControls" style="display:none; margin-top:20px;">
-    <h2>관리자용: 슬롯 생성</h2>
+    <h2>관리자용 슬롯 생성</h2>
     시작일: <input type="date" id="start-date">
     종료일: <input type="date" id="end-date"><br>
     시작시간: <input type="time" id="start-time">
@@ -27,14 +35,32 @@
     <ul id="slot-list-admin"></ul>
   </div>
 
-  <!-- 사용자 전용 예약 리스트 -->
+  <!-- 사용자 UI -->
   <div id="userSlots" style="display:none; margin-top:20px;">
     <h2>예약 가능한 슬롯</h2>
     <ul id="slot-list"></ul>
   </div>
 
+  <!-- 매주 스케줄 테이블 -->
+  <div id="scheduleSection" style="display:none; margin-top:30px;">
+    <h2>이번 주 스케줄 (월요일 오전 9시 기준)</h2>
+    <table class="schedule-table" id="weekly-schedule">
+      <thead>
+        <tr>
+          <th>시간</th>
+          <th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th>토</th><th>일</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script>
-    // 1) Firebase 초기화
+    // Firebase 초기화
     const firebaseConfig = {
   apiKey: "AIzaSyCGroYj_1Mpw0GBUn0p37z4Nncl1chqLUc",
   authDomain: "motdy-2b3ea.firebaseapp.com",
@@ -47,74 +73,64 @@
     firebase.initializeApp(firebaseConfig);
 
     const auth = firebase.auth();
-    const db = firebase.firestore();
+    const db   = firebase.firestore();
 
-    // 2) 초기 슬롯 시딩 (한 번만)
+    // 초기 슬롯 시딩 (한 번만)
     async function seedInitialSlots() {
-      const metaRef = db.collection('meta').doc('initialized');
-      const metaDoc = await metaRef.get();
-      if (!metaDoc.exists) {
-        const startDate = new Date('2025-06-01');
-        const endDate   = new Date('2025-06-07');
-        const startTime = '18:00', endTime = '20:00';
-        const batch = db.batch();
-        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate()+1)) {
-          const dateStr = d.toISOString().slice(0,10);
-          const slotRef = db.collection('availability').doc();
-          batch.set(slotRef, { date: dateStr, start: startTime, end: endTime });
+      const meta = db.collection('meta').doc('initialized');
+      if (!(await meta.get()).exists) {
+        const start = new Date('2025-06-01');
+        const end   = new Date('2025-06-07');
+        const st    = '18:00', et = '20:00';
+        const batch= db.batch();
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate()+1)) {
+          const date = d.toISOString().slice(0,10);
+          batch.set(db.collection('availability').doc(), { date, start: st, end: et });
         }
-        batch.set(metaRef, { done: true });
+        batch.set(meta, { done: true });
         await batch.commit();
       }
     }
     seedInitialSlots();
 
-    // 3) UI 요소 가져오기
+    // UI 요소 레퍼런스
     const btnLogin  = document.getElementById('btn-login');
     const btnLogout = document.getElementById('btn-logout');
     const adminDiv  = document.getElementById('adminControls');
     const userDiv   = document.getElementById('userSlots');
-    const slotList  = document.getElementById('slot-list');
-    const slotListAdmin = document.getElementById('slot-list-admin');
+    const schedDiv  = document.getElementById('scheduleSection');
+    const listAdmin = document.getElementById('slot-list-admin');
+    const listUser  = document.getElementById('slot-list');
     const btnCreate = document.getElementById('btn-create-slots');
 
-    // 4) 구글 로그인 구현
-    btnLogin.onclick = () => {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider)
-        .catch(err => alert('로그인 실패: ' + err.message));
-    };
+    // Google 로그인
+    btnLogin.onclick = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
     btnLogout.onclick = () => auth.signOut();
 
-    // 5) 인증 상태 변화에 따른 UI 분기
+    // 인증 상태 변화
     auth.onAuthStateChanged(async user => {
-      const token = user ? await user.getIdTokenResult() : null;
-      const isAdmin = token?.claims?.admin === true;
+      const token = user ? await user.getIdTokenResult() : {};
+      const isAdmin = token.claims.admin === true;
+      btnLogin.style.display = user ? 'none' : '';
+      btnLogout.style.display= user ? '' : 'none';
+      adminDiv.style.display = (user && isAdmin) ? '' : 'none';
+      userDiv.style.display  = (!user || !isAdmin) ? '' : 'none';
+      schedDiv.style.display = true; // 항상 표시
 
-      btnLogin.style.display  = user ? 'none' : '';
-      btnLogout.style.display = user ? '' : 'none';
-      adminDiv.style.display  = (user && isAdmin) ? '' : 'none';
-      userDiv.style.display   = (!user || !isAdmin) ? '' : 'none';
-
-      if (!user || !isAdmin) {
-        loadUserSlots();
-      } else {
-        loadAdminSlots();
-      }
+      if (user && isAdmin) loadAdminSlots(); else loadUserSlots();
+      renderWeeklySchedule();
     });
 
-    // 6) 관리자: 슬롯 일괄 생성 (폼 버튼)
+    // 관리자: 슬롯 생성
     btnCreate.onclick = async () => {
       const sd = document.getElementById('start-date').value;
       const ed = document.getElementById('end-date').value;
       const st = document.getElementById('start-time').value;
       const et = document.getElementById('end-time').value;
-      let d = new Date(sd), end = new Date(ed);
       const batch = db.batch();
-      while (d <= end) {
-        const dateStr = d.toISOString().slice(0,10);
-        const ref = db.collection('availability').doc();
-        batch.set(ref, { date: dateStr, start: st, end: et });
+      let d = new Date(sd), last = new Date(ed);
+      while (d <= last) {
+        batch.set(db.collection('availability').doc(), { date: d.toISOString().slice(0,10), start: st, end: et });
         d.setDate(d.getDate()+1);
       }
       await batch.commit();
@@ -122,48 +138,61 @@
     };
 
     async function loadAdminSlots() {
-      slotListAdmin.innerHTML = '';
-      const snap = await db.collection('availability')
-        .orderBy('date').orderBy('start').get();
+      listAdmin.innerHTML = '';
+      const snap = await db.collection('availability').orderBy('date').orderBy('start').get();
       snap.forEach(doc => {
         const { date, start, end } = doc.data();
-        const li = document.createElement('li');
-        li.textContent = `${date} ${start}~${end}`;
-        slotListAdmin.append(li);
+        listAdmin.insertAdjacentHTML('beforeend', `<li>${date} ${start}~${end}</li>`);
       });
     }
 
-    // 7) 사용자: 예약 가능한 슬롯 불러오기 & 예약 기능
     async function loadUserSlots() {
-      slotList.innerHTML = '';
-      const snap = await db.collection('availability')
-        .orderBy('date').orderBy('start').get();
+      listUser.innerHTML = '';
+      const snap = await db.collection('availability').orderBy('date').orderBy('start').get();
       for (let doc of snap.docs) {
-        const { date, start, end } = doc.data();
-        const id = doc.id;
-        const bookingRef = db.collection('bookings').doc(id);
-        const bdoc = await bookingRef.get();
-        const li = document.createElement('li');
-        li.textContent = `${date} ${start}~${end} : `;
-        if (bdoc.exists) {
-          li.textContent += `예약완료 (${bdoc.data().team})`;
-        } else {
-          const btn = document.createElement('button');
-          btn.textContent = '예약하기';
-          btn.onclick = async () => {
-            const team = prompt('팀명을 입력하세요');
-            if (!team) return;
-            try {
-              await bookingRef.create({ team });
-              loadUserSlots();
-            } catch {
-              alert('이미 예약된 슬롯입니다.');
-              loadUserSlots();
-            }
-          };
-          li.append(btn);
+        const { date, start, end } = doc.data(); const id = doc.id;
+        const b = await db.collection('bookings').doc(id).get();
+        const text = b.exists ? `예약됨 (${b.data().team})` : `<button onclick="book('${id}')">예약하기</button>`;
+        listUser.insertAdjacentHTML('beforeend', `<li>${date} ${start}~${end} : ${text}</li>`);
+      }
+    }
+    window.book = async id => {
+      const team = prompt('팀명 입력'); if (!team) return;
+      try { await db.collection('bookings').doc(id).create({ team }); }
+      catch { alert('이미 예약됨'); }
+      loadUserSlots(); renderWeeklySchedule();
+    };
+
+    // 주간 스케줄 렌더링 (월~일, 8시~23시)
+    async function renderWeeklySchedule() {
+      const tbody = document.querySelector('#weekly-schedule tbody');
+      tbody.innerHTML = '';
+      const now = new Date();
+      // 이번 주 월요일 계산
+      const d0 = new Date(now); const diff = (d0.getDay()+6)%7;
+      d0.setDate(d0.getDate()-diff); d0.setHours(0,0,0,0);
+
+      // availability와 bookings 모두 조회
+      const avail = await db.collection('availability')
+        .where('date', '>=', d0.toISOString().slice(0,10))
+        .where('date', '<=', new Date(d0.getTime()+6*86400000).toISOString().slice(0,10))
+        .get();
+      const map = {};
+      for (let doc of avail.docs) {
+        const { date, start } = doc.data();
+        const bdoc = await db.collection('bookings').doc(doc.id).get();
+        if (bdoc.exists) map[`${date}_${start}`] = bdoc.data().team;
+      }
+
+      for (let hour=8; hour<=23; hour++) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<th>${hour}:00</th>`;
+        for (let i=0; i<7; i++) {
+          const cd = new Date(d0); cd.setDate(d0.getDate()+i);
+          const key = `${cd.toISOString().slice(0,10)}_${hour.toString().padStart(2,'0')}:00`;
+          tr.innerHTML += `<td>${map[key]||''}</td>`;
         }
-        slotList.append(li);
+        tbody.appendChild(tr);
       }
     }
   </script>
