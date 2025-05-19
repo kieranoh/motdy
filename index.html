@@ -49,7 +49,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
-  <h1>합주 예약 시스템ver 1.6</h1>
+  <h1>합주 예약 시스템 ver1.7</h1>
   <div id="loginSection">
     <button id="btn-google-login">구글 로그인</button>
     <button id="btn-logout" style="display:none;">로그아웃</button>
@@ -106,18 +106,27 @@
     const auth = firebase.auth();
     const rdb = firebase.database();
 
-    // 빈 스케줄 그리드 렌더링 후 예약 표시
+    // 빈 스케줄 그리드 렌더링 후 예약 표시 (30분 간격 모두 표시)
     async function renderSchedule() {
       const tbody = document.querySelector('#weekly-schedule tbody');
       tbody.innerHTML = '';
 
-      // 예약 데이터 로드
+      // 예약 데이터 로드 및 mapping
       const snap = await rdb.ref('bookings').once('value');
       const bookingMap = {};
       snap.forEach(ch => {
         const b = ch.val();
-        const key = `${b.date}_${b.start}`;
-        bookingMap[key] = b;
+        // 각 30분 블록 단위로 map에 저장
+        const [sh, sm] = b.start.split(':').map(Number);
+        const [eh, em] = b.end.split(':').map(Number);
+        let startMin = sh * 60 + sm;
+        const endMin = eh * 60 + em;
+        while (startMin < endMin) {
+          const hh = String(Math.floor(startMin/60)).padStart(2,'0');
+          const mm = String(startMin%60).padStart(2,'0');
+          bookingMap[`${b.date}_${hh}:${mm}`] = b;
+          startMin += 30;
+        }
       });
 
       const today = new Date();
@@ -168,7 +177,6 @@
     document.addEventListener('DOMContentLoaded', () => {
       populateTimeOptions('form-start');
       populateTimeOptions('form-end');
-      // 날짜 기본값 오늘로 설정
       document.getElementById('form-date').value = new Date().toISOString().slice(0,10);
       renderSchedule();
     });
@@ -176,10 +184,8 @@
     // 유형 선택시 입력 표시
     document.querySelectorAll('input[name="type"]').forEach(radio => {
       radio.addEventListener('change', () => {
-        document.getElementById('label-team').style.display =
-          radio.value === '합주' && radio.checked ? 'block' : 'none';
-        document.getElementById('label-name').style.display =
-          radio.value === '개인연습' && radio.checked ? 'block' : 'none';
+        document.getElementById('label-team').style.display = radio.value==='합주'? 'block':'none';
+        document.getElementById('label-name').style.display = radio.value==='개인연습'? 'block':'none';
       });
     });
 
@@ -225,15 +231,13 @@
       const team = document.getElementById('form-team').value;
       const name = document.getElementById('form-name').value;
       const todayStr = new Date().toISOString().slice(0,10);
-      if (type === '개인연습' && date !== todayStr) {
-        return alert('개인연습은 당일만 예약 가능합니다.');
-      }
+      if (type === '개인연습' && date !== todayStr) return alert('개인연습은 당일만 예약 가능합니다.');
       const toMins = t => { const [h,m]=t.split(':').map(Number); return h*60+m; };
       const dur = toMins(end) - toMins(start);
       if (dur < 30) return alert('최소 30분 이상 예약해야 합니다.');
       if (dur > 60) return alert('최대 60분까지 예약 가능합니다.');
       const bookingData = { type, date, start, end };
-      if (type === '합주') bookingData.team = team;
+      if (type==='합주') bookingData.team = team;
       else bookingData.name = name;
       await rdb.ref('bookings').push(bookingData);
       alert('예약이 완료되었습니다.');
