@@ -47,7 +47,7 @@
   </style>
 </head>
 <body>
-  <h1>합주 예약 시스템</h1>
+  <h1>합주 예약 시스템ver 1.2</h1>
 
   <!-- 로그인 -->
   <div id="loginSection">
@@ -309,40 +309,55 @@
     };
 
     // 6) 주간 스케줄 렌더링
-    async function renderWeeklySchedule() {
-      const tbody = document.querySelector('#weekly-schedule tbody');
-      tbody.innerHTML = '';
-      const now = new Date(), day=now.getDay();
-      const mon = new Date(now);
-      mon.setDate(now.getDate() - (day===0?6:day-1));
-      mon.setHours(0,0,0,0);
+   async function renderWeeklySchedule() {
+  const tbody = document.querySelector('#weekly-schedule tbody');
+  tbody.innerHTML = '';
 
-      // 모든 예약 읽기
-      const snap = await rdb.ref('bookings').once('value');
-      const bookingMap = {};
-      snap.forEach(ch => {
-        const b = ch.val(), lbl = b.type==='합주'?b.team:b.name;
-        const s = timeToMinutes(b.start), e = timeToMinutes(b.end);
-        for (let t=s; t<e; t+=30) {
-          bookingMap[`${b.date}_${minutesToTime(t)}`] = lbl;
-        }
-      });
+  // 1) 이번 주 월요일 날짜 계산
+  const today = new Date();
+  const day   = today.getDay(); // 일:0, 월:1, ...
+  const mon   = new Date(today);
+  mon.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
+  mon.setHours(0,0,0,0);
 
-      for (let h=8; h<=23; h++) {
-        for (let m=0; m<60; m+=30) {
-          const label = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-          const tr = document.createElement('tr');
-          tr.innerHTML = `<th>${label}</th>`;
-          for (let i=0; i<7; i++) {
-            const d = new Date(mon);
-            d.setDate(mon.getDate()+i);
-            const key = `${d.toISOString().slice(0,10)}_${label}`;
-            tr.innerHTML += `<td>${bookingMap[key]||''}</td>`;
-          }
-          tbody.appendChild(tr);
-        }
-      }
+  // 2) “예약” 맵 읽기
+  const snap = await rdb.ref('bookings').once('value');
+  const bookingMap = {};
+  snap.forEach(ch => {
+    const b = ch.val();
+    const label = b.type === '합주' ? b.team : b.name;
+    const startMin = timeToMinutes(b.start);
+    const endMin   = timeToMinutes(b.end);
+    for (let t = startMin; t < endMin; t += 30) {
+      bookingMap[`${b.date}_${minutesToTime(t)}`] = label;
     }
+  });
+
+  // 3) 시간–요일 격자 채우기
+  for (let hour = 8; hour <= 23; hour++) {
+    for (let min = 0; min < 60; min += 30) {
+      const label = `${String(hour).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
+      const tr = document.createElement('tr');
+
+      // 시간 표시 셀
+      const th = document.createElement('th');
+      th.textContent = label;
+      tr.appendChild(th);
+
+      // 월~일 빈 칸 또는 예약 레이블
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(mon);
+        d.setDate(mon.getDate() + i);
+        const key = `${d.toISOString().slice(0,10)}_${label}`;
+        const td = document.createElement('td');
+        td.textContent = bookingMap[key] || '';  // 예약 없으면 빈 문자열
+        tr.appendChild(td);
+      }
+
+      tbody.appendChild(tr);
+    }
+  }
+}
 
     // 페이지 로드시
     document.addEventListener('DOMContentLoaded', async () => {
