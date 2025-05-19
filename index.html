@@ -6,16 +6,12 @@
   <style>
     body { font-family: sans-serif; padding: 20px; }
     h1, h2 { margin-bottom: 10px; }
-
-    /* 로그인 영역 */
     #loginSection { margin-bottom: 20px; }
     #user-info { margin-top: 8px; font-weight: bold; }
     #btn-reserve { margin-top: 12px; }
-
     /* 관리자 슬롯 리스트 */
     #slot-list-admin li,
     #slot-list li { margin: 4px 0; }
-
     /* 스케줄 테이블 */
     .schedule-table {
       border-collapse: collapse;
@@ -32,22 +28,30 @@
       height: 40px;
     }
     .schedule-table th { background: #f7f7f7; }
+    /* 예약 폼 */
+    #bookingForm {
+      display: none;
+      border: 1px solid #ddd;
+      padding: 16px;
+      margin-top: 20px;
+      max-width: 320px;
+    }
+    #bookingForm label { display: block; margin: 8px 0; }
+    #bookingForm button { margin-right: 8px; }
   </style>
 </head>
 <body>
   <h1>합주 예약 시스템</h1>
 
-  <!-- 1) 로그인 섹션 -->
+  <!-- 로그인 & 사용자 정보 & 예약하기 버튼 -->
   <div id="loginSection">
     <button id="btn-google-login">구글 로그인</button>
     <button id="btn-logout" style="display:none;">로그아웃</button>
-    <div id="user-info" style="display:none;">
-      안녕하세요, <span id="user-name"></span>님
-    </div>
+    <div id="user-info"></div>
     <button id="btn-reserve" style="display:none;">예약하기</button>
   </div>
 
-  <!-- 2) 관리자용 슬롯 생성 -->
+  <!-- 관리자용 슬롯 생성 -->
   <div id="adminControls" style="display:none; margin-top:20px;">
     <h2>관리자: 슬롯 생성</h2>
     시작일: <input type="date" id="start-date">
@@ -58,13 +62,13 @@
     <ul id="slot-list-admin"></ul>
   </div>
 
-  <!-- 3) 사용자용 슬롯 신청 리스트 -->
+  <!-- 사용자용 슬롯 리스트 -->
   <div id="userSlots" style="display:none; margin-top:20px;">
     <h2>예약 가능한 슬롯</h2>
     <ul id="slot-list"></ul>
   </div>
 
-  <!-- 4) 주간 스케줄 테이블 -->
+  <!-- 주간 스케줄 테이블 -->
   <h2>이번 주 스케줄 (30분 단위, 월~일 8:00~23:30)</h2>
   <table class="schedule-table" id="weekly-schedule">
     <thead>
@@ -77,23 +81,43 @@
     <tbody></tbody>
   </table>
 
+  <!-- 예약 폼 (모달 대신 인라인) -->
+  <div id="bookingForm">
+    <h2>예약하기</h2>
+    <form id="formBooking">
+      <label>
+        예약 타입:
+        <label><input type="radio" name="type" value="합주" checked> 합주</label>
+        <label><input type="radio" name="type" value="개인연습"> 개인연습</label>
+      </label>
+      <label>날짜: <input type="date" id="form-date" required></label>
+      <label>시작 시간: <input type="time" id="form-start" required></label>
+      <label>종료 시간: <input type="time" id="form-end" required></label>
+      <div id="form-name-team">
+        <label id="label-team">팀명: <input type="text" id="form-team"></label>
+        <label id="label-name" style="display:none;">이름: <input type="text" id="form-name"></label>
+      </div>
+      <button type="submit">제출</button>
+      <button type="button" id="btn-cancel">취소</button>
+    </form>
+  </div>
+
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
   <script>
-    // 헬퍼: 시간 ↔ 분
+    // ─────────────── 헬퍼 함수 ───────────────
     function timeToMinutes(s) {
-      const [hh, mm] = s.split(':').map(Number);
-      return hh*60 + mm;
+      const [h,m] = s.split(':').map(Number);
+      return h*60 + m;
     }
     function minutesToTime(m) {
-      const hh = Math.floor(m/60), mm = m%60;
-      return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+      return `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
     }
 
-    // Firebase 초기화 (업로드하신 설정 반영)
+    // ─────────────── Firebase 초기화 ───────────────
     const firebaseConfig = {
       apiKey: "AIzaSyCGroYj_1Mpw0GBUn0p37z4Nncl1chqLUc",
       authDomain: "motdy-2b3ea.firebaseapp.com",
@@ -106,72 +130,55 @@
     const auth = firebase.auth();
     const db   = firebase.firestore();
 
-    // 초기 슬롯 시딩 (한 번만)
-    async function seedInitialSlots() {
-      const metaRef = db.collection('meta').doc('initialized');
-      if (!(await metaRef.get()).exists) {
-        const start = new Date('2025-06-01'),
-              end   = new Date('2025-06-07'),
-              st    = '18:00', et = '20:00';
-        const batch = db.batch();
-        for (let d=new Date(start); d<=end; d.setDate(d.getDate()+1)) {
-          const doc = db.collection('availability').doc();
-          batch.set(doc, { date: d.toISOString().slice(0,10), start: st, end: et });
-        }
-        batch.set(metaRef, { done: true });
-        await batch.commit();
-      }
-    }
-    seedInitialSlots();
+    // ─────────────── UI 요소 바인딩 ───────────────
+    const btnGoogle   = document.getElementById('btn-google-login');
+    const btnLogout   = document.getElementById('btn-logout');
+    const userInfo    = document.getElementById('user-info');
+    const btnReserve  = document.getElementById('btn-reserve');
+    const bookingForm = document.getElementById('bookingForm');
+    const formBooking = document.getElementById('formBooking');
+    const rbType      = document.getElementsByName('type');
+    const labelTeam   = document.getElementById('label-team');
+    const labelName   = document.getElementById('label-name');
+    const inpDate     = document.getElementById('form-date');
+    const inpStart    = document.getElementById('form-start');
+    const inpEnd      = document.getElementById('form-end');
+    const inpTeam     = document.getElementById('form-team');
+    const inpName     = document.getElementById('form-name');
+    const btnCancel   = document.getElementById('btn-cancel');
 
-    // UI 엘리먼트
-    const
-      btnGoogle     = document.getElementById('btn-google-login'),
-      btnLogout     = document.getElementById('btn-logout'),
-      userInfo      = document.getElementById('user-info'),
-      userNameSpan  = document.getElementById('user-name'),
-      btnReserve    = document.getElementById('btn-reserve'),
-      adminDiv      = document.getElementById('adminControls'),
-      userDiv       = document.getElementById('userSlots'),
-      slotList      = document.getElementById('slot-list'),
-      slotListAdmin = document.getElementById('slot-list-admin'),
-      btnCreate     = document.getElementById('btn-create-slots');
+    // 관리자/사용자 영역
+    const adminDiv      = document.getElementById('adminControls');
+    const userDiv       = document.getElementById('userSlots');
+    const slotList      = document.getElementById('slot-list');
+    const slotListAdmin = document.getElementById('slot-list-admin');
+    const btnCreate     = document.getElementById('btn-create-slots');
 
-    // 로그인/로그아웃
+    // ─────────────── 로그인 핸들링 ───────────────
     btnGoogle.onclick = () => {
       auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
         .catch(e => alert('구글 로그인 실패: '+e.message));
     };
     btnLogout.onclick = () => auth.signOut();
 
-    // 전역예약 버튼: 클릭 시 사용자 예약 리스트로 스크롤
-    btnReserve.onclick = () => {
-      loadUserSlots();
-      userDiv.scrollIntoView({ behavior: 'smooth' });
-    };
-
     auth.onAuthStateChanged(async user => {
       const token   = user ? await user.getIdTokenResult() : {};
       const isAdmin = token.claims.admin === true;
-      // UI 토글
+
       btnGoogle.style.display = user ? 'none' : '';
       btnLogout.style.display = user ? '' : 'none';
-      userInfo.style.display  = user ? '' : 'none';
-      btnReserve.style.display= user ? '' : 'none';
-      adminDiv.style.display  = (user && isAdmin) ? '' : 'none';
-      userDiv.style.display   = (!user || !isAdmin) ? '' : 'none';
-      // 이름 표시
-      if (user) userNameSpan.textContent = user.displayName || user.email;
-      // 데이터 로드
-      if (user && isAdmin) {
-        loadAdminSlots();
-      } else {
-        loadUserSlots();
-      }
+      userInfo.textContent    = user ? `환영합니다, ${user.displayName}` : '';
+      btnReserve.style.display = user ? '' : 'none';
+
+      adminDiv.style.display = (user && isAdmin) ? '' : 'none';
+      userDiv.style.display  = (!user || !isAdmin)  ? '' : 'none';
+
+      if (user && isAdmin) loadAdminSlots();
+      else loadUserSlots();
       renderWeeklySchedule();
     });
 
-    // 관리자: 슬롯 생성
+    // ─────────────── 관리자: 슬롯 생성 ───────────────
     btnCreate.onclick = async () => {
       const sd = document.getElementById('start-date').value;
       const ed = document.getElementById('end-date').value;
@@ -181,89 +188,133 @@
       const batch = db.batch();
       while (d <= last) {
         const doc = db.collection('availability').doc();
-        batch.set(doc, { date: d.toISOString().slice(0,10), start: st, end: et });
+        batch.set(doc, {
+          date: d.toISOString().slice(0,10),
+          start: st, end: et
+        });
         d.setDate(d.getDate()+1);
       }
       await batch.commit();
-      loadAdminSlots(); renderWeeklySchedule();
+      loadAdminSlots();
+      renderWeeklySchedule();
     };
     async function loadAdminSlots() {
       slotListAdmin.innerHTML = '';
       const snap = await db.collection('availability')
         .orderBy('date').orderBy('start').get();
-      snap.forEach(d => {
-        const { date, start, end } = d.data();
+      snap.forEach(doc => {
+        const {date,start,end} = doc.data();
         const li = document.createElement('li');
         li.textContent = `${date} ${start}~${end}`;
         slotListAdmin.appendChild(li);
       });
     }
 
-    // 사용자: 슬롯 리스트 & 예약 버튼
+    // ────────── “예약하기” 폼 토글 & 타입 변화 ──────────
+    btnReserve.onclick = () => bookingForm.style.display = '';
+    btnCancel.onclick  = () => bookingForm.style.display = 'none';
+
+    rbType.forEach(r => r.onchange = () => {
+      if (r.checked && r.value==='합주') {
+        labelTeam.style.display = '';
+        labelName.style.display = 'none';
+      } else {
+        labelTeam.style.display = 'none';
+        labelName.style.display = '';
+      }
+    });
+
+    // ─────────────── 사용자: 슬롯 리스트 ───────────────
     async function loadUserSlots() {
       slotList.innerHTML = '';
       const snap = await db.collection('availability')
         .orderBy('date').orderBy('start').get();
       for (let doc of snap.docs) {
         const { date, start, end } = doc.data();
-        const li = document.createElement('li');
-        li.textContent = `${date} ${start}~${end} : `;
         const bookingRef = db.collection('bookings').doc(doc.id);
-        const bdoc = await bookingRef.get();
+        const bdoc       = await bookingRef.get();
+        const li        = document.createElement('li');
+        li.textContent  = `${date} ${start}~${end} : `;
         if (bdoc.exists) {
-          const b = bdoc.data();
-          const who = b.type==='합주'? b.team : b.name;
+          const b   = bdoc.data();
+          const who = b.type==='합주'?b.team:b.name;
           li.textContent += `예약완료 (${who})`;
         } else {
           const btn = document.createElement('button');
           btn.textContent = '예약하기';
-          btn.onclick = () => handleBooking(doc);
+          btn.onclick     = () => btnReserve.click();
           li.appendChild(btn);
         }
         slotList.appendChild(li);
       }
     }
 
-    // 예약 처리 (합주/개인연습, 충돌검사 등)
-    async function handleBooking(doc) {
-      const { date, start: aStart, end: aEnd } = doc.data();
-      const type = prompt("예약 타입: '합주' 또는 '개인연습'");
-      if (type!=='합주' && type!=='개인연습') return alert('올바른 타입을 입력해주세요.');
-      if (type==='개인연습' && date!==new Date().toISOString().slice(0,10)) {
-        return alert('개인연습은 당일만 가능합니다.');
-      }
-      const s = prompt(`시작시간 (HH:MM)\n※ ${aStart}~${aEnd}`),
-            e = prompt('종료시간 (30~60분)');
-      if (!s||!e) return;
-      const sm = timeToMinutes(s), em = timeToMinutes(e);
-      if (em<=sm) return alert('시간 순서 오류');
-      const dur = em-sm;
-      if (dur<30||dur>60) return alert('30~60분 사이로 예약해주세요.');
-      if (sm<timeToMinutes(aStart)||em>timeToMinutes(aEnd)) {
-        return alert(`${aStart}~${aEnd} 범위 내에서만 예약 가능합니다.`);
-      }
-      const exist = await db.collection('bookings')
-        .where('date','==',date).get();
-      for (let bdoc of exist.docs) {
-        if (bdoc.id===doc.id) continue;
-        const b = bdoc.data();
-        const bs = timeToMinutes(b.start), be = timeToMinutes(b.end);
-        if (sm<be && em>bs) return alert('겹치는 예약이 있습니다.');
-      }
-      const payload = { date, start: s, end: e, type };
-      if (type==='합주') {
-        const team = prompt('팀명 입력'); if (!team) return;
-        payload.team = team;
-      } else {
-        const name = prompt('이름 입력'); if (!name) return;
-        payload.name = name;
-      }
-      await db.collection('bookings').doc(doc.id).set(payload);
-      alert('예약 완료!');
-      loadUserSlots(); renderWeeklySchedule();
-    }
+    // ─────────────── 예약 제출 처리 ───────────────
+    formBooking.onsubmit = async e => {
+      e.preventDefault();
+      const type     = [...rbType].find(r=>r.checked).value;
+      const date     = inpDate.value;
+      const startStr = inpStart.value;
+      const endStr   = inpEnd.value;
+      if (!date||!startStr||!endStr) return alert('모든 필드를 채워주세요.');
 
-    // 주간 스케줄 렌더링 (30분 단위)
+      // 개인연습은 당일만
+      const today = new Date().toISOString().slice(0,10);
+      if (type==='개인연습' && date!==today) {
+        return alert('개인연습은 당일만 예약 가능합니다.');
+      }
+      // 시간 유효성 검사
+      const sMin = timeToMinutes(startStr),
+            eMin = timeToMinutes(endStr),
+            dur  = eMin - sMin;
+      if (dur<30||dur>60) {
+        return alert('예약은 최소 30분, 최대 60분입니다.');
+      }
+
+      // 가용 슬롯 찾기
+      const availSnap = await db.collection('availability')
+        .where('date','==',date).get();
+      let slotDoc = null;
+      availSnap.forEach(d => {
+        const a = d.data();
+        if (sMin>=timeToMinutes(a.start) && eMin<=timeToMinutes(a.end)) {
+          slotDoc = d; // 가장 마지막 충족 doc
+        }
+      });
+      if (!slotDoc) return alert('해당 시간에 예약 가능한 슬롯이 없습니다.');
+
+      // 충돌 검사
+      const existing = await db.collection('bookings')
+        .where('date','==',date).get();
+      for (let bdoc of existing.docs) {
+        if (bdoc.id===slotDoc.id) continue;
+        const b = bdoc.data();
+        const bs = timeToMinutes(b.start),
+              be = timeToMinutes(b.end);
+        if (sMin < be && eMin > bs) {
+          return alert('해당 시간에 이미 예약이 있습니다.');
+        }
+      }
+
+      // 이름/팀명
+      const payload = { date, start: startStr, end: endStr, type };
+      if (type==='합주') {
+        if (!inpTeam.value) return alert('팀명을 입력하세요.');
+        payload.team = inpTeam.value;
+      } else {
+        if (!inpName.value) return alert('이름을 입력하세요.');
+        payload.name = inpName.value;
+      }
+
+      // 저장
+      await db.collection('bookings').doc(slotDoc.id).set(payload);
+      alert('예약 완료되었습니다!');
+      bookingForm.style.display = 'none';
+      loadUserSlots();
+      renderWeeklySchedule();
+    };
+
+    // ─────────────── 주간 스케줄 렌더링 ───────────────
     async function renderWeeklySchedule() {
       const tbody = document.querySelector('#weekly-schedule tbody');
       tbody.innerHTML = '';
@@ -275,15 +326,16 @@
       const startStr = mon.toISOString().slice(0,10);
       const endDate  = new Date(mon.getTime()+6*86400000);
       const endStr   = endDate.toISOString().slice(0,10);
-      const snap = await db.collection('bookings')
+      const snap     = await db.collection('bookings')
         .where('date','>=',startStr).where('date','<=',endStr).get();
 
       const bookingMap = {};
       snap.forEach(d => {
         const b = d.data();
-        const label = b.type==='합주'?b.team:b.name;
-        const sm = timeToMinutes(b.start), em = timeToMinutes(b.end);
-        for (let t=sm; t<em; t+=30) {
+        const label = b.type==='합주'? b.team : b.name;
+        const s = timeToMinutes(b.start),
+              e = timeToMinutes(b.end);
+        for (let t=s; t<e; t+=30) {
           bookingMap[`${b.date}_${minutesToTime(t)}`] = label;
         }
       });
@@ -291,7 +343,7 @@
       for (let h=8; h<=23; h++) {
         for (let m=0; m<60; m+=30) {
           const lbl = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-          const tr = document.createElement('tr');
+          const tr  = document.createElement('tr');
           tr.innerHTML = `<th>${lbl}</th>`;
           for (let i=0; i<7; i++) {
             const d = new Date(mon);
