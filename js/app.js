@@ -1,11 +1,12 @@
 // Firebase 초기화
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCGroYj_1Mpw0GBUn0p37z4Nncl1chqLUc",
+  authDomain: "motdy-2b3ea.firebaseapp.com",
+  projectId: "motdy-2b3ea",
+  storageBucket: "motdy-2b3ea.firebasestorage.app",
+  messagingSenderId: "376404804075",
+  appId: "1:376404804075:web:d4d85f0baab14fe3a859ae",
+  measurementId: "G-F2W9Y511E6"
 };
 firebase.initializeApp(firebaseConfig);
 
