@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>합주 예약</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+  <h1>합주 예약</h1>
+  <ul id="slot-list"></ul>
+
+  <script src="js/app.js"></script>
+  <script>
+    async function loadSlots() {
+      const db = firebase.firestore();
+      const slotsSnap = await db.collection('availability')
+        .orderBy('date').orderBy('start').get();
+      const list = document.getElementById('slot-list');
+      list.innerHTML = '';
+      slotsSnap.forEach(doc => {
+        const slot = doc.data();
+        const id = doc.id;
+        const bookingRef = db.collection('bookings').doc(id);
+        bookingRef.get().then(bdoc => {
+          const li = document.createElement('li');
+          const txt = `${slot.date} ${slot.start}~${slot.end} : `;
+          if (bdoc.exists) {
+            li.textContent = txt + '예약완료 (' + bdoc.data().team + ')';
+          } else {
+            const btn = document.createElement('button');
+            btn.textContent = '예약하기';
+            btn.onclick = async () => {
+              const team = prompt('팀명을 입력하세요');
+              if (!team) return;
+              try {
+                await bookingRef.create({ team });
+                loadSlots();
+              } catch (e) {
+                alert('이미 예약된 슬롯입니다.');
+                loadSlots();
+              }
+            };
+            li.textContent = txt;
+            li.appendChild(btn);
+          }
+          list.appendChild(li);
+        });
+      });
+    }
+    loadSlots();
+  </script>
+</body>
+</html>
