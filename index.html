@@ -6,12 +6,16 @@
   <style>
     body { font-family: sans-serif; padding: 20px; }
     h1, h2 { margin-bottom: 10px; }
+
     /* 로그인 폼 */
     #loginSection input { margin-right: 8px; }
+
     /* 관리자 슬롯 리스트 */
     #slot-list-admin li { margin: 4px 0; }
+
     /* 사용자 슬롯 리스트 */
     #slot-list li { margin: 4px 0; }
+
     /* 스케줄 테이블 */
     .schedule-table {
       border-collapse: collapse;
@@ -60,7 +64,7 @@
   </div>
 
   <!-- 4) 주간 스케줄 테이블 -->
-  <h2>이번 주 스케줄 (30분 단위)</h2>
+  <h2>이번 주 스케줄 (30분 단위, 월~일 8:00~23:30)</h2>
   <table class="schedule-table" id="weekly-schedule">
     <thead>
       <tr>
@@ -78,8 +82,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
   <script>
-    // ───────────────────────────────────────────────────────────
-    // 0) 시간 처리 헬퍼
+    // ─────────────── 헬퍼 함수 ───────────────
     function timeToMinutes(s) {
       const [hh, mm] = s.split(':').map(Number);
       return hh * 60 + mm;
@@ -90,24 +93,24 @@
       return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
     }
 
-    // 1) Firebase 초기화
+    // ─────────────── Firebase 초기화 ───────────────
     const firebaseConfig = {
-  apiKey: "AIzaSyCGroYj_1Mpw0GBUn0p37z4Nncl1chqLUc",
-  authDomain: "motdy-2b3ea.firebaseapp.com",
-  projectId: "motdy-2b3ea",
-  storageBucket: "motdy-2b3ea.firebasestorage.app",
-  messagingSenderId: "376404804075",
-  appId: "1:376404804075:web:d4d85f0baab14fe3a859ae",
-  measurementId: "G-F2W9Y511E6"
-};
+      apiKey: "AIzaSyCGroYj_1Mpw0GBUn0p37z4Nncl1chqLUc",
+      authDomain: "motdy-2b3ea.firebaseapp.com",
+      projectId: "motdy-2b3ea",
+      storageBucket: "motdy-2b3ea.firebasestorage.app",
+      messagingSenderId: "376404804075",
+      appId: "1:376404804075:web:d4d85f0baab14fe3a859ae",
+      measurementId: "G-F2W9Y511E6"
+    };  
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db   = firebase.firestore();
 
-    // 2) 초기 슬롯 시딩 (관리자가 아직 추가 전이라면 기본값)
+    // ─────────────── 초기 슬롯 시딩 ───────────────
     async function seedInitialSlots() {
-      const meta = db.collection('meta').doc('initialized');
-      if (!(await meta.get()).exists) {
+      const metaRef = db.collection('meta').doc('initialized');
+      if (!(await metaRef.get()).exists) {
         const start = new Date('2025-06-01'),
               end   = new Date('2025-06-07'),
               st    = '18:00', et = '20:00';
@@ -116,13 +119,13 @@
           const doc = db.collection('availability').doc();
           batch.set(doc, { date: d.toISOString().slice(0,10), start: st, end: et });
         }
-        batch.set(meta, { done: true });
+        batch.set(metaRef, { done: true });
         await batch.commit();
       }
     }
     seedInitialSlots();
 
-    // 3) UI 요소 가져오기
+    // ─────────────── UI 요소 바인딩 ───────────────
     const
       emailIn       = document.getElementById('email'),
       passIn        = document.getElementById('password'),
@@ -135,24 +138,22 @@
       slotListAdmin = document.getElementById('slot-list-admin'),
       btnCreate     = document.getElementById('btn-create-slots');
 
-    // 4) 로그인 구현
+    // ─────────────── 로그인 핸들링 ───────────────
     btnEmailLogin.onclick = () => {
       auth.signInWithEmailAndPassword(emailIn.value, passIn.value)
         .catch(e => alert('로그인 실패: ' + e.message));
     };
     btnGoogle.onclick = () => {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider)
+      auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
         .catch(e => alert('구글 로그인 실패: ' + e.message));
     };
     btnLogout.onclick = () => auth.signOut();
 
-    // 5) 인증 상태 변화 처리
+    // ─────────────── 인증 상태 변화 ───────────────
     auth.onAuthStateChanged(async user => {
-      const token   = user ? await user.getIdTokenResult() : null;
-      const isAdmin = token?.claims?.admin === true;
+      const token   = user ? await user.getIdTokenResult() : {};
+      const isAdmin = token.claims.admin === true;
 
-      // 버튼/섹션 표시 토글
       btnEmailLogin.style.display = user ? 'none' : '';
       btnGoogle.style.display     = user ? 'none' : '';
       btnLogout.style.display     = user ? '' : 'none';
@@ -167,26 +168,21 @@
       renderWeeklySchedule();
     });
 
-    // 6) 관리자: 슬롯 일괄 생성
+    // ─────────────── 관리자: 슬롯 생성 ───────────────
     btnCreate.onclick = async () => {
       const sd = document.getElementById('start-date').value;
       const ed = document.getElementById('end-date').value;
       const st = document.getElementById('start-time').value;
       const et = document.getElementById('end-time').value;
-      let d = new Date(sd), end = new Date(ed);
+      let d = new Date(sd), last = new Date(ed);
       const batch = db.batch();
-      while (d <= end) {
+      while (d <= last) {
         const doc = db.collection('availability').doc();
-        batch.set(doc, {
-          date: d.toISOString().slice(0,10),
-          start: st,
-          end: et
-        });
+        batch.set(doc, { date: d.toISOString().slice(0,10), start: st, end: et });
         d.setDate(d.getDate()+1);
       }
       await batch.commit();
-      loadAdminSlots();
-      renderWeeklySchedule();
+      loadAdminSlots(); renderWeeklySchedule();
     };
 
     async function loadAdminSlots() {
@@ -201,17 +197,16 @@
       });
     }
 
-    // 7) 사용자: 슬롯 리스트 & 예약 핸들러 연결
+    // ─────────────── 사용자: 슬롯 & 예약 ───────────────
     async function loadUserSlots() {
       slotList.innerHTML = '';
-      const snap = await db.collection('availability')
+      const availSnap = await db.collection('availability')
         .orderBy('date').orderBy('start').get();
-      for (let doc of snap.docs) {
+      for (let doc of availSnap.docs) {
         const { date, start, end } = doc.data();
-        const id       = doc.id;
-        const bookingRef = db.collection('bookings').doc(id);
-        const bdoc     = await bookingRef.get();
-        const li       = document.createElement('li');
+        const bookingRef = db.collection('bookings').doc(doc.id);
+        const bdoc = await bookingRef.get();
+        const li = document.createElement('li');
         li.textContent = `${date} ${start}~${end} : `;
         if (bdoc.exists) {
           const b = bdoc.data();
@@ -220,52 +215,39 @@
         } else {
           const btn = document.createElement('button');
           btn.textContent = '예약하기';
-          btn.onclick   = () => handleBooking(doc);
+          btn.onclick = () => handleBooking(doc);
           li.appendChild(btn);
         }
         slotList.appendChild(li);
       }
     }
 
-    // ───────────────────────────────────────────────────────────
-    // 8) 예약폼 & 충돌검사 & 저장
+    // ─────────────── 예약 처리 ───────────────
     async function handleBooking(doc) {
       const { date, start: availStart, end: availEnd } = doc.data();
-      // 1) 타입 선택
-      const type = prompt("예약 타입을 입력하세요:\n1) 합주\n2) 개인연습\n-> '합주' 또는 '개인연습'");
+      const type = prompt("1) 합주\n2) 개인연습\n-> '합주' 또는 '개인연습' 입력");
       if (type !== '합주' && type !== '개인연습') return alert('올바른 타입을 입력해주세요.');
-
-      // 2) 개인연습은 당일만
       const today = new Date().toISOString().slice(0,10);
       if (type === '개인연습' && date !== today) {
         return alert('개인연습은 당일만 예약 가능합니다.');
       }
 
-      // 3) 시간 입력
-      const startStr = prompt(`시작 시간 입력 (HH:MM)\n※ ${availStart}~${availEnd} 내`);
-      const endStr   = prompt(`종료 시간 입력 (HH:MM)\n※ 최소 30분, 최대 60분`);
+      const startStr = prompt(`시작 시간 입력 (HH:MM)\n※ ${availStart}~${availEnd} 범위`),
+            endStr   = prompt('종료 시간 입력 (최소 30분, 최대 60분)');
       if (!startStr || !endStr) return;
-
-      const sMin = timeToMinutes(startStr);
-      const eMin = timeToMinutes(endStr);
-      if (isNaN(sMin) || isNaN(eMin) || eMin <= sMin) {
-        return alert('시간 형식이 잘못되었거나 종료가 시작보다 빠릅니다.');
-      }
-      const duration = eMin - sMin;
-      if (duration < 30 || duration > 60) {
-        return alert('예약은 최소 30분, 최대 60분입니다.');
-      }
-
-      // 4) 관리자 설정 범위 내인지
+      const sMin = timeToMinutes(startStr), eMin = timeToMinutes(endStr);
+      if (isNaN(sMin)||isNaN(eMin)||eMin<=sMin) return alert('시간 형식 오류');
+      const dur = eMin - sMin;
+      if (dur<30||dur>60) return alert('30분~60분 사이로 예약해주세요.');
       if (sMin < timeToMinutes(availStart) || eMin > timeToMinutes(availEnd)) {
-        return alert(`${availStart}~${availEnd} 범위 내에서 예약해야 합니다.`);
+        return alert(`${availStart}~${availEnd} 범위 내에서만 가능합니다.`);
       }
 
-      // 5) 기존 예약과 충돌 검사
+      // 충돌 검사
       const existing = await db.collection('bookings')
-        .where('date','==', date).get();
+        .where('date','==',date).get();
       for (let bdoc of existing.docs) {
-        if (bdoc.id === doc.id) continue; // 자기 자신
+        if (bdoc.id === doc.id) continue;
         const b = bdoc.data();
         const bs = timeToMinutes(b.start), be = timeToMinutes(b.end);
         if (sMin < be && eMin > bs) {
@@ -273,72 +255,56 @@
         }
       }
 
-      // 6) 이름/팀명 입력
-      let payload = { date, start: startStr, end: endStr, type };
+      // 이름/팀명 입력
+      const payload = { date, start: startStr, end: endStr, type };
       if (type === '합주') {
-        const team = prompt('팀명을 입력하세요');
-        if (!team) return;
+        const team = prompt('팀명을 입력하세요'); if (!team) return;
         payload.team = team;
       } else {
-        const name = prompt('이름을 입력하세요');
-        if (!name) return;
+        const name = prompt('이름을 입력하세요'); if (!name) return;
         payload.name = name;
       }
 
-      // 7) Firestore에 저장
       await db.collection('bookings').doc(doc.id).set(payload);
       alert('예약이 완료되었습니다.');
-      loadUserSlots();
-      renderWeeklySchedule();
+      loadUserSlots(); renderWeeklySchedule();
     }
 
-    // ───────────────────────────────────────────────────────────
-    // 9) 주간 스케줄 렌더링 (30분 단위)
+    // ─────────────── 주간 스케줄 렌더링 ───────────────
     async function renderWeeklySchedule() {
       const tbody = document.querySelector('#weekly-schedule tbody');
       tbody.innerHTML = '';
-
-      // 이번 주 월요일 날짜 계산
-      const today = new Date();
-      const day   = today.getDay(); // 일:0, 월:1, ...
-      const mon   = new Date(today);
-      mon.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
+      const now = new Date(), day = now.getDay();
+      const mon = new Date(now);
+      mon.setDate(now.getDate() - (day===0?6:day-1));
       mon.setHours(0,0,0,0);
 
-      // 이번 주 범위
-      const startDateStr = mon.toISOString().slice(0,10);
-      const endDate      = new Date(mon.getTime() + 6*86400000);
-      const endDateStr   = endDate.toISOString().slice(0,10);
-
-      // 예약만 가져오기
+      const startStr = mon.toISOString().slice(0,10);
+      const endDate  = new Date(mon.getTime()+6*86400000);
+      const endStr   = endDate.toISOString().slice(0,10);
       const snap = await db.collection('bookings')
-        .where('date','>=', startDateStr)
-        .where('date','<=', endDateStr).get();
+        .where('date','>=',startStr).where('date','<=',endStr).get();
 
-      // 날짜+시간 키 맵으로 변환
       const bookingMap = {};
-      snap.forEach(doc => {
-        const b = doc.data();
-        const label = b.type === '합주' ? b.team : b.name;
-        const sMin  = timeToMinutes(b.start);
-        const eMin  = timeToMinutes(b.end);
-        for (let t = sMin; t < eMin; t += 30) {
-          const key = `${b.date}_${minutesToTime(t)}`;
-          bookingMap[key] = label;
+      snap.forEach(d => {
+        const b = d.data();
+        const label = b.type==='합주'?b.team:b.name;
+        const s = timeToMinutes(b.start), e = timeToMinutes(b.end);
+        for (let t=s; t<e; t+=30) {
+          bookingMap[`${b.date}_${minutesToTime(t)}`] = label;
         }
       });
 
-      // 8:00~23:30 30분 단위 row 생성
-      for (let h = 8; h <= 23; h++) {
-        for (let m = 0; m < 60; m += 30) {
-          const label = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-          const tr    = document.createElement('tr');
-          tr.innerHTML = `<th>${label}</th>`;
-          for (let i = 0; i < 7; i++) {
+      for (let h=8; h<=23; h++) {
+        for (let m=0; m<60; m+=30) {
+          const lbl = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<th>${lbl}</th>`;
+          for (let i=0; i<7; i++) {
             const d = new Date(mon);
-            d.setDate(mon.getDate() + i);
-            const key = `${d.toISOString().slice(0,10)}_${label}`;
-            tr.innerHTML += `<td>${bookingMap[key] || '&nbsp;'}</td>`;
+            d.setDate(mon.getDate()+i);
+            const key = `${d.toISOString().slice(0,10)}_${lbl}`;
+            tr.innerHTML += `<td>${bookingMap[key]||' '}</td>`;
           }
           tbody.appendChild(tr);
         }
