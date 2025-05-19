@@ -6,12 +6,12 @@
   <style>
     body { font-family: sans-serif; padding: 20px; }
     h1, h2 { margin-bottom: 10px; }
+    /* 로그인 영역 */
     #loginSection { margin-bottom: 20px; }
     #user-info { margin-top: 8px; font-weight: bold; }
     #btn-reserve { margin-top: 12px; }
-    /* 관리자 슬롯 리스트 */
-    #slot-list-admin li,
-    #slot-list li { margin: 4px 0; }
+    /* 관리자 슬롯 생성 */
+    #adminControls { margin-top: 20px; }
     /* 스케줄 테이블 */
     .schedule-table {
       border-collapse: collapse;
@@ -43,7 +43,7 @@
 <body>
   <h1>합주 예약 시스템</h1>
 
-  <!-- 로그인 & 사용자 정보 & 예약하기 버튼 -->
+  <!-- 1) 로그인 & 사용자 정보 & 예약하기 버튼 -->
   <div id="loginSection">
     <button id="btn-google-login">구글 로그인</button>
     <button id="btn-logout" style="display:none;">로그아웃</button>
@@ -51,8 +51,8 @@
     <button id="btn-reserve" style="display:none;">예약하기</button>
   </div>
 
-  <!-- 관리자용 슬롯 생성 -->
-  <div id="adminControls" style="display:none; margin-top:20px;">
+  <!-- 2) 관리자: 슬롯 생성 -->
+  <div id="adminControls" style="display:none;">
     <h2>관리자: 슬롯 생성</h2>
     시작일: <input type="date" id="start-date">
     종료일: <input type="date" id="end-date"><br>
@@ -62,26 +62,19 @@
     <ul id="slot-list-admin"></ul>
   </div>
 
-  <!-- 사용자용 슬롯 리스트 -->
-  <div id="userSlots" style="display:none; margin-top:20px;">
-    <h2>예약 가능한 슬롯</h2>
-    <ul id="slot-list"></ul>
-  </div>
-
-  <!-- 주간 스케줄 테이블 -->
+  <!-- 3) 이번 주 스케줄 -->
   <h2>이번 주 스케줄 (30분 단위, 월~일 8:00~23:30)</h2>
   <table class="schedule-table" id="weekly-schedule">
     <thead>
       <tr>
-        <th>시간</th>
-        <th>월</th><th>화</th><th>수</th>
+        <th>시간</th><th>월</th><th>화</th><th>수</th>
         <th>목</th><th>금</th><th>토</th><th>일</th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
 
-  <!-- 예약 폼 (모달 대신 인라인) -->
+  <!-- 4) 예약 폼 -->
   <div id="bookingForm">
     <h2>예약하기</h2>
     <form id="formBooking">
@@ -147,20 +140,18 @@
     const inpName     = document.getElementById('form-name');
     const btnCancel   = document.getElementById('btn-cancel');
 
-    // 관리자/사용자 영역
     const adminDiv      = document.getElementById('adminControls');
-    const userDiv       = document.getElementById('userSlots');
-    const slotList      = document.getElementById('slot-list');
     const slotListAdmin = document.getElementById('slot-list-admin');
     const btnCreate     = document.getElementById('btn-create-slots');
 
-    // ─────────────── 로그인 핸들링 ───────────────
+    // ─────────────── 구글 로그인/로그아웃 ───────────────
     btnGoogle.onclick = () => {
       auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
         .catch(e => alert('구글 로그인 실패: '+e.message));
     };
     btnLogout.onclick = () => auth.signOut();
 
+    // ─────────────── 인증 상태 변화 ───────────────
     auth.onAuthStateChanged(async user => {
       const token   = user ? await user.getIdTokenResult() : {};
       const isAdmin = token.claims.admin === true;
@@ -171,10 +162,6 @@
       btnReserve.style.display = user ? '' : 'none';
 
       adminDiv.style.display = (user && isAdmin) ? '' : 'none';
-      userDiv.style.display  = (!user || !isAdmin)  ? '' : 'none';
-
-      if (user && isAdmin) loadAdminSlots();
-      else loadUserSlots();
       renderWeeklySchedule();
     });
 
@@ -195,9 +182,10 @@
         d.setDate(d.getDate()+1);
       }
       await batch.commit();
-      loadAdminSlots();
+      await loadAdminSlots();
       renderWeeklySchedule();
     };
+
     async function loadAdminSlots() {
       slotListAdmin.innerHTML = '';
       const snap = await db.collection('availability')
@@ -224,32 +212,7 @@
       }
     });
 
-    // ─────────────── 사용자: 슬롯 리스트 ───────────────
-    async function loadUserSlots() {
-      slotList.innerHTML = '';
-      const snap = await db.collection('availability')
-        .orderBy('date').orderBy('start').get();
-      for (let doc of snap.docs) {
-        const { date, start, end } = doc.data();
-        const bookingRef = db.collection('bookings').doc(doc.id);
-        const bdoc       = await bookingRef.get();
-        const li        = document.createElement('li');
-        li.textContent  = `${date} ${start}~${end} : `;
-        if (bdoc.exists) {
-          const b   = bdoc.data();
-          const who = b.type==='합주'?b.team:b.name;
-          li.textContent += `예약완료 (${who})`;
-        } else {
-          const btn = document.createElement('button');
-          btn.textContent = '예약하기';
-          btn.onclick     = () => btnReserve.click();
-          li.appendChild(btn);
-        }
-        slotList.appendChild(li);
-      }
-    }
-
-    // ─────────────── 예약 제출 처리 ───────────────
+    // ─────────────── 예약 폼 제출 처리 ───────────────
     formBooking.onsubmit = async e => {
       e.preventDefault();
       const type     = [...rbType].find(r=>r.checked).value;
@@ -263,6 +226,7 @@
       if (type==='개인연습' && date!==today) {
         return alert('개인연습은 당일만 예약 가능합니다.');
       }
+
       // 시간 유효성 검사
       const sMin = timeToMinutes(startStr),
             eMin = timeToMinutes(endStr),
@@ -278,7 +242,7 @@
       availSnap.forEach(d => {
         const a = d.data();
         if (sMin>=timeToMinutes(a.start) && eMin<=timeToMinutes(a.end)) {
-          slotDoc = d; // 가장 마지막 충족 doc
+          slotDoc = d;
         }
       });
       if (!slotDoc) return alert('해당 시간에 예약 가능한 슬롯이 없습니다.');
@@ -296,7 +260,7 @@
         }
       }
 
-      // 이름/팀명
+      // 이름/팀명 입력 확인
       const payload = { date, start: startStr, end: endStr, type };
       if (type==='합주') {
         if (!inpTeam.value) return alert('팀명을 입력하세요.');
@@ -306,11 +270,10 @@
         payload.name = inpName.value;
       }
 
-      // 저장
+      // Firestore 저장
       await db.collection('bookings').doc(slotDoc.id).set(payload);
       alert('예약 완료되었습니다!');
       bookingForm.style.display = 'none';
-      loadUserSlots();
       renderWeeklySchedule();
     };
 
