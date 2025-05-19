@@ -6,211 +6,209 @@
   <style>
     body { font-family: sans-serif; padding: 20px; }
     h1,h2 { margin-bottom: 10px; }
-    #user-info { margin-top: 8px; font-weight: bold; }
+    #loginSection { margin-bottom: 20px; }
+    /* 모달 백그라운드 */
+    #bookingOverlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+    }
+    /* 모달 폼 */
+    #bookingForm {
+      display: none;
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 1000;
+      width: 340px;
+    }
+    #bookingForm h2 { margin-top: 0; }
+    #bookingForm form > label { display: block; margin: 12px 0; }
+    #bookingForm button { margin-right: 8px; }
+    /* 스케줄표 */
     .schedule-table { border-collapse: collapse; width: 100%; margin-top: 20px; font-size: 1rem; }
-    .schedule-table th,
-    .schedule-table td { border: 1px solid #ccc; padding: 8px; text-align: center; min-width: 60px; height: 30px; }
+    .schedule-table th, .schedule-table td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+      height: 30px;
+      min-width: 60px;
+    }
     .schedule-table th { background: #f7f7f7; }
-    #bookingOverlay { display: none; position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.3); z-index: 900; }
-    #bookingForm { display: none; position: fixed; top:50%; left:50%; transform: translate(-50%,-50%); background: #fff; padding:20px; border:1px solid #999; box-shadow:0 2px 10px rgba(0,0,0,0.2); z-index:1000; width:300px; }
-    #bookingForm label { display:block; margin:8px 0; }
-    #bookingForm button { margin-right:8px; }
-    .btn-cell-book { font-size:0.8rem; padding:2px 4px; }
   </style>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
-  <h1>합주 예약 시스템 ver 1.2</h1>
+  <h1>합주 예약 시스템 ver1.5</h1>
   <div id="loginSection">
     <button id="btn-google-login">구글 로그인</button>
     <button id="btn-logout" style="display:none;">로그아웃</button>
-    <button id="btn-book-now" style="margin-left:8px; display:none;">예약하기</button>
+    <button id="btn-book-now" style="margin-left:10px; display:none;">예약하기</button>
     <div id="user-info"></div>
   </div>
 
-  <h2 id="slotSection">예약 가능한 슬롯</h2>
-  <ul id="slot-list"></ul>
-
-  <h2>이번 주 스케줄 (30분 단위, 월~일 8:00~23:30)</h2>
+  <h2>이번 주 스케줄 (월~일 8:00~23:30)</h2>
   <table class="schedule-table" id="weekly-schedule">
     <thead>
-      <tr><th>시간</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th>토</th><th>일</th></tr>
+      <tr>
+        <th>시간</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th>토</th><th>일</th>
+      </tr>
     </thead>
     <tbody></tbody>
   </table>
 
+  <!-- 모달 백그라운드 -->
   <div id="bookingOverlay"></div>
+  <!-- 모달 폼 -->
   <div id="bookingForm">
     <h2>예약하기</h2>
     <form id="formBooking">
-      <label>예약 타입:
+      <label>
+        예약 유형:<br>
         <label><input type="radio" name="type" value="합주" checked> 합주</label>
         <label><input type="radio" name="type" value="개인연습"> 개인연습</label>
       </label>
-      <label>날짜: <input type="date" id="form-date" required></label>
-      <label>시작 시간: <input type="time" id="form-start" required></label>
-      <label>종료 시간: <input type="time" id="form-end" required></label>
-      <div id="form-name-team">
-        <label id="label-team">팀명: <input type="text" id="form-team"></label>
-        <label id="label-name" style="display:none;">이름: <input type="text" id="form-name"></label>
+      <label>날짜:<br><input type="date" id="form-date" required></label>
+      <label>시작 시간:<br><select id="form-start" required></select></label>
+      <label>종료 시간:<br><select id="form-end" required></select></label>
+      <div style="text-align:right; margin-top:16px;">
+        <button type="button" id="btn-cancel">취소</button>
+        <button type="submit">확인</button>
       </div>
-      <button type="submit">제출</button>
-      <button type="button" id="btn-cancel">취소</button>
     </form>
   </div>
 
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script>
-    function timeToMinutes(s) { const [h,m]=s.split(':').map(Number); return h*60+m; }
-    function minutesToTime(m) { return `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`; }
-
+    // Firebase 설정
     const firebaseConfig = {
       apiKey: "AIzaSyCGroYj_1Mpw0GBUn0p37z4Nncl1chqLUc",
       authDomain: "motdy-2b3ea.firebaseapp.com",
-      databaseURL: "https://motdy-2b3ea-default-rtdb.firebaseio.com",
+      databaseURL: "https://motdy-2b3ea-default-rtdb.firebaseio.com/",
       projectId: "motdy-2b3ea",
-      storageBucket: "motdy-2b3ea.appspot.com",
+      storageBucket: "motdy-2b3ea.firebasestorage.app",
       messagingSenderId: "376404804075",
-      appId: "1:376404804075:web:d4d85f0baab14fe3a859ae"
+      appId: "1:376404804075:web:d4d85f0baab14fe3a859ae",
+      measurementId: "G-F2W9Y511E6"
     };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
-    const rdb  = firebase.database();
+    const rdb = firebase.database();
 
-    const btnGoogle   = document.getElementById('btn-google-login');
-    const btnLogout   = document.getElementById('btn-logout');
-    const btnBookNow  = document.getElementById('btn-book-now');
-    const userInfo    = document.getElementById('user-info');
-    const slotList    = document.getElementById('slot-list');
-    const bookingOv   = document.getElementById('bookingOverlay');
-    const bookingForm = document.getElementById('bookingForm');
-    const formBooking = document.getElementById('formBooking');
-    const rbType      = document.getElementsByName('type');
-    const labelTeam   = document.getElementById('label-team');
-    const labelName   = document.getElementById('label-name');
-    const inpDate     = document.getElementById('form-date');
-    const inpStart    = document.getElementById('form-start');
-    const inpEnd      = document.getElementById('form-end');
-    const inpTeam     = document.getElementById('form-team');
-    const inpName     = document.getElementById('form-name');
-    const btnCancel   = document.getElementById('btn-cancel');
-
-    btnGoogle.onclick = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
-    btnLogout.onclick = () => auth.signOut();
-    btnBookNow.onclick = () => openBooking({ date:'', start:'' });
-
-    auth.onAuthStateChanged(user => {
-      btnGoogle.style.display = user ? 'none' : '';
-      btnLogout.style.display = user ? '' : 'none';
-      btnBookNow.style.display = user ? '' : 'none';
-      document.getElementById('slotSection').style.display = user ? '' : 'none';
-      userInfo.textContent = user ? `환영합니다, ${user.displayName}` : '';
-      loadUserSlots(); renderWeeklySchedule();
-    });
-
-    async function loadUserSlots() {
-      slotList.innerHTML = '';
-      const snap = await rdb.ref('availability').orderByChild('date').once('value');
-      snap.forEach(ch => {
-        const id = ch.key;
-        const { date,start,end } = ch.val();
-        const li = document.createElement('li');
-        li.textContent = `${date} ${start}~${end} : `;
-        rdb.ref(`bookings/${id}`).once('value').then(bsnap => {
-          if (bsnap.exists()) {
-            const b = bsnap.val();
-            const who = b.type==='합주'? b.team: b.name;
-            li.textContent += `예약완료 (${who})`;
-          } else {
-            const btn = document.createElement('button');
-            btn.textContent = '예약하기';
-            btn.onclick = () => openBooking({ date, start });
-            li.appendChild(btn);
-          }
-        });
-        slotList.appendChild(li);
-      });
-    }
-
-    function openBooking({ date, start }) {
-      inpDate.value  = date;
-      inpStart.value = start;
-      inpEnd.value   = start ? minutesToTime(timeToMinutes(start) + 30) : '';
-      rbType[0].checked = true;
-      labelTeam.style.display = '';
-      labelName.style.display = 'none';
-      bookingOv.style.display = '';
-      bookingForm.style.display = '';
-    }
-
-    btnCancel.onclick = () => { bookingForm.style.display = 'none'; bookingOv.style.display = 'none'; };
-    rbType.forEach(r => r.onchange = () => {
-      labelTeam.style.display = r.value==='합주' && r.checked ? '' : 'none';
-      labelName.style.display = r.value==='개인연습' && r.checked ? '' : 'none';
-    });
-
-    formBooking.onsubmit = async e => {
-      e.preventDefault();
-      const type = [...rbType].find(r => r.checked).value;
-      const date = inpDate.value;
-      const sMin = timeToMinutes(inpStart.value), eMin = timeToMinutes(inpEnd.value);
-      if (type==='개인연습' && date !== new Date().toISOString().slice(0,10)) return alert('개인연습은 당일만 가능');
-      const dur = eMin - sMin; if (dur < 30 || dur > 60) return alert('30~60분만 예약 가능');
-      const bsnap = await rdb.ref('bookings').orderByChild('date').equalTo(date).once('value');
-      let conflict = false;
-      bsnap.forEach(ch => {
-        const b = ch.val();
-        const bs = timeToMinutes(b.start), be = timeToMinutes(b.end);
-        if (sMin < be && eMin > bs) conflict = true;
-      });
-      if (conflict) return alert('이미 예약이 있습니다.');
-      const payload = { date, start: inpStart.value, end: inpEnd.value, type };
-      if (type==='합주') payload.team = inpTeam.value;
-      else payload.name = inpName.value;
-      const newId = rdb.ref('bookings').push().key;
-      await rdb.ref(`bookings/${newId}`).set(payload);
-      alert('예약 완료!'); btnCancel.click(); loadUserSlots(); renderWeeklySchedule();
-    };
-
-    async function renderWeeklySchedule() {
+    // 빈 스케줄 그리드 렌더링
+    function renderSchedule() {
       const tbody = document.querySelector('#weekly-schedule tbody');
       tbody.innerHTML = '';
-      const snap = await rdb.ref('bookings').once('value');
-      const bookingMap = {};
-      snap.forEach(ch => {
-        const b = ch.val();
-        bookingMap[`${b.date}_${minutesToTime(timeToMinutes(b.start))}`] = b;
-      });
-
-      const today = new Date(); const day = today.getDay(); const mon = new Date(today);
-      mon.setDate(today.getDate() - (day === 0 ? 6 : day - 1)); mon.setHours(0,0,0,0);
-
+      const today = new Date();
+      const day = today.getDay();
+      const mon = new Date(today);
+      mon.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
       for (let hour = 8; hour <= 23; hour++) {
         for (let min = 0; min < 60; min += 30) {
-          const label = `${String(hour).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
           const tr = document.createElement('tr');
-          tr.innerHTML = `<th>${label}</th>`;
+          const timeLabel = `${String(hour).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
+          const th = document.createElement('th'); th.textContent = timeLabel;
+          tr.appendChild(th);
           for (let i = 0; i < 7; i++) {
-            const d = new Date(mon);
-            d.setDate(mon.getDate() + i);
-            const dateStr = d.toISOString().slice(0,10);
-            const key = `${dateStr}_${label}`;
-            if (bookingMap[key]) {
-              tr.innerHTML += `<td>${bookingMap[key].type==='합주'? bookingMap[key].team : bookingMap[key].name}</td>`;
-            } else {
-              tr.innerHTML += `<td><button class="btn-cell-book" onclick="openBooking({ date: '${dateStr}', start: '${label}' })">예약하기</button></td>`;
-            }
+            const td = document.createElement('td'); td.textContent = '';
+            tr.appendChild(td);
           }
           tbody.appendChild(tr);
         }
       }
     }
 
-    // 페이지 로드 시 빈 스케줄 표시 보장
+    // 시간 선택 옵션 채우기 (30분 단위)
+    function populateTimeOptions(selectId) {
+      const sel = document.getElementById(selectId);
+      sel.innerHTML = '';
+      for (let hour = 8; hour <= 23; hour++) {
+        for (let min of [0,30]) {
+          const h = String(hour).padStart(2,'0');
+          const m = String(min).padStart(2,'0');
+          const val = `${h}:${m}`;
+          const opt = document.createElement('option'); opt.value = val; opt.textContent = val;
+          sel.appendChild(opt);
+        }
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
-      renderWeeklySchedule();
+      renderSchedule();
+      populateTimeOptions('form-start');
+      populateTimeOptions('form-end');
+      // 날짜 기본값 오늘로 설정
+      const todayStr = new Date().toISOString().slice(0,10);
+      document.getElementById('form-date').value = todayStr;
     });
+
+    // 인증 처리
+    const btnLogin = document.getElementById('btn-google-login');
+    const btnLogout = document.getElementById('btn-logout');
+    const btnBook = document.getElementById('btn-book-now');
+    const userInfo = document.getElementById('user-info');
+    btnLogin.onclick = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+    btnLogout.onclick = () => auth.signOut();
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        userInfo.textContent = `환영합니다, ${user.displayName}`;
+        btnLogin.style.display = 'none';
+        btnLogout.style.display = '';
+        btnBook.style.display = '';
+        // 로그인 후 데이터 가져오기
+        rdb.ref('availability').once('value').then(snapshot => {
+          const slots = snapshot.val();
+          console.log('가용 슬롯:', slots);
+          // TODO: 스케줄표에 데이터 반영 로직 추가
+        });
+      } else {
+        userInfo.textContent = '';
+        btnLogin.style.display = '';
+        btnLogout.style.display = 'none';
+        btnBook.style.display = 'none';
+      }
+    });
+
+    // 모달 열기/닫기
+    const overlay = document.getElementById('bookingOverlay');
+    const formDiv = document.getElementById('bookingForm');
+    const btnCancel = document.getElementById('btn-cancel');
+    const form = document.getElementById('formBooking');
+    btnBook.onclick = () => { overlay.style.display='block'; formDiv.style.display='block'; };
+    btnCancel.onclick = () => { formDiv.style.display='none'; overlay.style.display='none'; };
+    overlay.onclick = () => btnCancel.onclick();
+
+    // 예약 유효성 검사
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      const type = document.querySelector('input[name="type"]:checked').value;
+      const date = document.getElementById('form-date').value;
+      const start = document.getElementById('form-start').value;
+      const end = document.getElementById('form-end').value;
+      const todayStr = new Date().toISOString().slice(0,10);
+      if (type === '개인연습' && date !== todayStr) {
+        alert('개인연습은 당일만 예약 가능합니다.'); return;
+      }
+      const toMins = t => { const [h,m]=t.split(':').map(Number); return h*60+m; };
+      const dur = toMins(end) - toMins(start);
+      if (dur < 30) { alert('최소 30분 이상 예약해야 합니다.'); return; }
+      if (dur > 60) { alert('최대 60분까지 예약 가능합니다.'); return; }
+      // 예약 정보 서버에 저장 예시
+      const bookingData = { type, date, start, end, user: auth.currentUser.uid };
+      rdb.ref('bookings').push(bookingData).then(() => {
+        alert('예약이 완료되었습니다.');
+        btnCancel.onclick();
+      });
+    };
   </script>
 </body>
 </html>
