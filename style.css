@@ -1,0 +1,68 @@
+body {
+  font-family: sans-serif;
+  padding: 20px;
+}
+h1, h2 {
+  margin-bottom: 10px;
+}
+#loginSection {
+  margin-bottom: 20px;
+}
+/* 모달 백그라운드 */
+#bookingOverlay,
+#deleteOverlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 999;
+}
+/* 모달 폼 */
+#bookingForm,
+#deleteForm {
+  display: none;
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  z-index: 1000;
+  width: 360px;
+}
+#bookingForm h2,
+#deleteForm h2 {
+  margin-top: 0;
+}
+#bookingForm form > label,
+#deleteForm ul {
+  margin: 8px 0;
+}
+#bookingForm button,
+#deleteForm button {
+  margin-right: 8px;
+}
+#label-team,
+#label-name {
+  margin-top: 8px;
+}
+/* 스케줄표 */
+.schedule-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 20px;
+  font-size: 1rem;
+}
+.schedule-table th,
+.schedule-table td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: center;
+  height: 30px;
+  min-width: 60px;
+}
+.schedule-table th {
+  background: #f7f7f7;
+  white-space: nowrap;
+}
