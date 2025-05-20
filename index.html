@@ -254,20 +254,11 @@ button:hover {
   mon.setHours(8,0,0,0);
   return mon;
 }
-function getThisWeekWednesday13() {
-  const mon8 = getThisWeekMonday8();
-  const wed = new Date(mon8);
-  wed.setDate(mon8.getDate() + 1);   // 월 + 2일 = 수
-  wed.setHours(19,10,0,0);
-  return wed;
-}
-
-function getThisWeekSundayEnd() {
-  const mon8 = getThisWeekMonday8();
-  const sun = new Date(mon8);
-  sun.setDate(mon8.getDate() + 6);   // 월 + 6일 = 일
-  sun.setHours(23,59,59,999);
-  return sun;
+function getNextWeekMonday8() {
+  const curMon8 = getThisWeekMonday8();
+  const next = new Date(curMon8);
+  next.setDate(curMon8.getDate() + 7);
+  return next;
 }
 
     // 스케줄 렌더링
@@ -333,42 +324,20 @@ function getThisWeekSundayEnd() {
 
       renderSchedule();
 
-    const dateInput = document.getElementById('form-date');
+      const dateInput = document.getElementById('form-date');
     const mon8 = getThisWeekMonday8();
-    const wed13   = getThisWeekWednesday13();
-    const nextMon8 = getThisWeekSundayEnd();
+    const nextMon8 = getNextWeekMonday8();
     const toYMD = d => d.toISOString().slice(0,10);
 
-    let minDate, maxDate;
-  if (now < wed13) {
-    // Period 1
-    minDate = mon8;
-    maxDate = wed13;
-  } else {
-    // Period 2
-    minDate = wed13;
-    maxDate = sunEnd;
-  }
-  
-  flatpickr("#form-date", {
-    locale: "ko",
+    flatpickr("#form-date", {
+    locale: "ko",              // 한글 로케일
     dateFormat: "Y-m-d",
-    defaultDate: now,
-    minDate,
-    maxDate,
-    firstDayOfWeek: 1
+    defaultDate: new Date(),    // 오늘
+    minDate: mon8,              // 이번 주 월요일
+    maxDate: new Date(nextMon8.getTime()-1), // 다음 주 월요일 직전
+    weekNumbers: false,
+    firstDayOfWeek: 1           // 월요일을 주 시작으로
   });
-});
-
-  //   flatpickr("#form-date", {
-  //   locale: "ko",              // 한글 로케일
-  //   dateFormat: "Y-m-d",
-  //   defaultDate: new Date(),    // 오늘
-  //   minDate: mon8,              // 이번 주 월요일
-  //   maxDate: new Date(nextMon8.getTime()-1), // 다음 주 월요일 직전
-  //   weekNumbers: false,
-  //   firstDayOfWeek: 1           // 월요일을 주 시작으로
-  // });
 
       // 타입별 라벨 토글
       const labelTeam = document.getElementById('label-team');
@@ -389,7 +358,7 @@ function getThisWeekSundayEnd() {
           }
         });
       });
-    // });
+    });
 
     // 인증 상태에 따라 UI 전환
     const btnLogin = document.getElementById('btn-google-login'),
@@ -510,7 +479,7 @@ function getThisWeekSundayEnd() {
              end = document.getElementById('form-end').value;
 
 
-    if (type === '합주') {
+      if (type === '합주') {
     if (!team) {
       alert('팀명을 입력해주세요.');
       return;
@@ -530,7 +499,7 @@ function getThisWeekSundayEnd() {
               const now      = new Date();
               const wed13    = getThisWeekWednesday13();
 
-   if (now < wed13) {
+   if (now < mon8) {
     alert('이번 주 예약은 매주 월요일 오전 8시 이후에만 가능합니다.');
     return;
   }
