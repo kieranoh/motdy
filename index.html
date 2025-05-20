@@ -158,7 +158,7 @@ button:hover {
     </div>
   </header>
 
-  <h1>합주 예약 시스템 ver 3.2</h1>
+  <h1>합주 예약 시스템 ver 3.3</h1>
 
   <div id="actionSection">
     <button id="btn-book-now" style="display:none;">예약하기</button>
@@ -229,7 +229,23 @@ button:hover {
     const auth = firebase.auth(), rdb = firebase.database();
     let isAdmin = false; 
 
+    function getThisWeekMonday8() {
+  const now = new Date();
+  const day = now.getDay();  // 일=0, 월=1…
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+  mon.setHours(8,0,0,0);
+  return mon;
+}
+function getNextWeekMonday8() {
+  const curMon8 = getThisWeekMonday8();
+  const next = new Date(curMon8);
+  next.setDate(curMon8.getDate() + 7);
+  return next;
+}
+
     // 스케줄 렌더링
+    
     async function renderSchedule() {
       const today = new Date(), day = today.getDay(), mon = new Date(today);
       mon.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
@@ -290,6 +306,16 @@ button:hover {
       document.getElementById('form-date').value = new Date().toISOString().slice(0,10);
 
       renderSchedule();
+
+      const dateInput = document.getElementById('form-date');
+    const mon8 = getThisWeekMonday8();
+    const nextMon8 = getNextWeekMonday8();
+    const toYMD = d => d.toISOString().slice(0,10);
+
+    dateInput.min = toYMD(mon8);
+  // dateInput.max = toYMD(new Date(nextMon8.getTime() - 24*60*60*1000)); // 일요일까지
+  dateInput.max = toYMD(new Date(nextMon8.getTime() - 1)); // 다음 월요일 바로 전
+  
 
       // 타입별 라벨 토글
       const labelTeam = document.getElementById('label-team');
@@ -428,12 +454,29 @@ button:hover {
     // 예약 저장
     document.getElementById('formBooking').onsubmit = async e => {
       e.preventDefault();
+      
       const type = document.querySelector('input[name="type"]:checked').value;
       const date = document.getElementById('form-date').value,
             start = document.getElementById('form-start').value,
             end = document.getElementById('form-end').value;
 
             if(!isAdmin){
+
+              const selDateStr = document.getElementById('form-date').value;           // "2025-05-26"
+  const selDate = new Date(selDateStr + 'T00:00:00');                     // 자정 기준
+  const mon8     = getThisWeekMonday8();                                  // 이번 주 월 08:00
+  const nextMon8 = getNextWeekMonday8();                                  // 다음 주 월 08:00
+  const now      = new Date();
+
+   if (now < mon8) {
+    alert('이번 주 예약은 매주 월요일 오전 8시 이후에만 가능합니다.');
+    return;
+  }
+  if (selDate < new Date(mon8.getFullYear(),mon8.getMonth(),mon8.getDate())
+      || selDate >= new Date(nextMon8.getFullYear(),nextMon8.getMonth(),nextMon8.getDate())) {
+    alert('예약 가능한 날짜는 이번 주 월요일부터 일요일까지입니다.');
+    return;
+  }
               const toMins = t => t.split(':').reduce((h,m)=>h*60+parseInt(m),0),
             sMin = toMins(start), eMin = toMins(end);
       const snap = await rdb.ref('bookings').orderByChild('date').equalTo(date).once('value');
