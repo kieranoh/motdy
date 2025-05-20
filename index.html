@@ -335,7 +335,7 @@ function getNextWeekMonday8() {
     dateFormat: "Y-m-d",
     defaultDate: new Date(),    // 오늘
     minDate: mon8,              // 이번 주 월요일
-    maxDate: new Date(nextMon8.getTime()-1), // 다음 주 월요일 직전
+    maxDate: new Date(nextMon8.getTime()), // 다음 주 월요일 직전
     weekNumbers: false,
     firstDayOfWeek: 1           // 월요일을 주 시작으로
   });
