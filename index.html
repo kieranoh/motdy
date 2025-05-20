@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>합주 예약 시스템 ver 2.7</title>
+  <title>합주 예약 시스템 ver 3.0</title>
   <style>
     /* ─── 원본 (라이트 모드) ─── */
     h1,h2 { margin-bottom:10px; }
@@ -227,6 +227,7 @@ button:hover {
     };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth(), rdb = firebase.database();
+    let isAdmin = false; 
 
     // 스케줄 렌더링
     async function renderSchedule() {
@@ -321,7 +322,8 @@ button:hover {
     btnLogin.onclick = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
     btnLogout.onclick = () => auth.signOut();
 
-    auth.onAuthStateChanged(user => {
+    auth.onAuthStateChanged(async user => {
+      isAdmin = false;
       if (user) {
         greeting.textContent = `안녕하세요, ${user.displayName}님`;
         greeting.style.display = 'inline';
@@ -329,6 +331,11 @@ button:hover {
         btnLogout.style.display = 'inline';
         btnBook.style.display = 'inline';
         btnDelete.style.display = 'inline';
+
+        const snap = await rdb.ref('admins/' + user.uid).once('value');
+        if (snap.val() === true) {
+          isAdmin = true;
+        }
         
       } else {
         greeting.style.display = 'none';
@@ -349,38 +356,67 @@ button:hover {
           btnCancel = document.getElementById('btn-cancel'),
           btnDeleteCancel = document.getElementById('btn-delete-cancel');
 
-    btnBook.onclick = () => { overlay.style.display = 'block'; formDiv.style.display = 'block'; };
+    btnBook.onclick = () => {
+  overlay.style.display = 'block';
+  formDiv.style.display = 'block';
+
+  if (isAdmin) {
+    // 관리자라면… (예: 사용자 선택 필드 보이기)
+    document.getElementById('form-team').parentElement.style.display = 'none';    // 팀명 숨기기
+    document.getElementById('form-name').parentElement.style.display = 'none';    // 이름 숨기기
+    // 예시: 관리자가 마음대로 user 입력할 수 있도록 새 input 보이기
+    if (!document.getElementById('form-user')) {
+      const userLabel = document.createElement('label');
+      userLabel.innerHTML = `사용자 UID:<br><input type="text" id="form-user" placeholder="UID 입력">`;
+      formDiv.querySelector('form').insertBefore(userLabel, formDiv.querySelector('form').children[2]);
+    }
+  } else {
+    // 일반 유저: 기존대로 팀명/이름 토글
+    document.getElementById('label-team').style.display = '';
+    document.getElementById('label-name').style.display = 'none';
+    if (document.getElementById('form-user')) {
+      document.getElementById('form-user').parentElement.remove();
+    }
+  }
+};
     btnCancel.onclick = () => { formDiv.style.display = 'none'; overlay.style.display = 'none'; };
     overlay.onclick = () => btnCancel.onclick();
 
     btnDelete.onclick = async () => {
-      deleteOverlay.style.display = 'block';
-      deleteForm.style.display = 'block';
-      const list = document.getElementById('delete-list');
-      list.innerHTML = '';
-      const user = auth.currentUser; if (!user) return;
-      const snap = await rdb.ref('bookings').once('value');
-      let found = false;
-      snap.forEach(ch => {
-        const b = ch.val();
-        if (b.user === user.uid) {
-          found = true;
-          const li = document.createElement('li');
-          li.textContent = `${b.date} ${b.start}-${b.end} (${b.type==='합주'?b.team:b.name}) `;
-          const btn = document.createElement('button');
-          btn.textContent = '삭제';
-          btn.onclick = async () => {
-            await rdb.ref('bookings/'+ch.key).remove();
-            alert('삭제되었습니다.');
-            li.remove();
-            renderSchedule();
-          };
-          li.appendChild(btn);
-          list.appendChild(li);
-        }
-      });
-      if (!found) list.innerHTML = '<li>예약 내역이 없습니다.</li>';
-    };
+  deleteOverlay.style.display = 'block';
+  deleteForm.style.display = 'block';
+  const list = document.getElementById('delete-list');
+  list.innerHTML = '';
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const snap = await rdb.ref('bookings').once('value');
+  let found = false;
+  snap.forEach(ch => {
+    const b = ch.val();
+    // 관리자면 무조건, 일반 유저면 본인 것만
+    if (isAdmin || b.user === user.uid) {
+      found = true;
+      const li = document.createElement('li');
+      li.textContent = `${b.date} ${b.start}-${b.end} (${b.type==='합주'?b.team:b.name}) `;
+      const btn = document.createElement('button');
+      btn.textContent = '삭제';
+      btn.onclick = async () => {
+        await rdb.ref('bookings/'+ch.key).remove();
+        alert('삭제되었습니다.');
+        li.remove();
+        renderSchedule();
+      };
+      li.appendChild(btn);
+      list.appendChild(li);
+    }
+  });
+  if (!found) {
+    list.innerHTML = isAdmin
+      ? '<li>예약 내역이 없습니다.</li>'
+      : '<li>예약 내역이 없습니다.</li>';  // 일반 유저 메시지와 동일
+  }
+};
     btnDeleteCancel.onclick = () => { deleteForm.style.display = 'none'; deleteOverlay.style.display = 'none'; };
     deleteOverlay.onclick = () => btnDeleteCancel.onclick();
 
@@ -391,7 +427,9 @@ button:hover {
       const date = document.getElementById('form-date').value,
             start = document.getElementById('form-start').value,
             end = document.getElementById('form-end').value;
-      const toMins = t => t.split(':').reduce((h,m)=>h*60+parseInt(m),0),
+
+            if(!isAdmin){
+              const toMins = t => t.split(':').reduce((h,m)=>h*60+parseInt(m),0),
             sMin = toMins(start), eMin = toMins(end);
       const snap = await rdb.ref('bookings').orderByChild('date').equalTo(date).once('value');
       let conflict = false;
@@ -406,7 +444,9 @@ button:hover {
       }
       const dur = eMin - sMin;
       if (dur < 30) return alert('최소 30분 이상 예약해야 합니다.');
-      if (dur > 60) return alert('최대 60분까지 예약 가능합니다.');
+      if (dur > 60) return alert('최대 60분까지 예약 가능합니다.');        
+      }
+      
 
       const data = { type,date,start,end,user:auth.currentUser.uid };
       if (type==='합주') data.team = document.getElementById('form-team').value;
