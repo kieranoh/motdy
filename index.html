@@ -4,7 +4,68 @@
   <meta charset="UTF-8" />
   <title>합주 예약 시스템</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; }
+  body {
+  background:#121212;
+  color:#e0e0e0;
+  font-family:sans-serif;
+  padding:20px;
+  }
+  a, button { color:inherit; }
+  /* ── 헤더 ── */
+#mainHeader {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:10px 0;
+  border-bottom:1px solid #333;
+}
+#siteLogo {
+  height:40px;
+}
+#authContainer {
+  display:flex;
+  align-items:center;
+}
+#greeting {
+  margin-right:12px;
+  font-size:0.9rem;
+}
+
+/* ── 액션영역(예약/삭제) ── */
+#actionSection {
+  margin:16px 0;
+}
+#actionSection button {
+  margin-right:8px;
+  background:#1f1f1f;
+  border:1px solid #444;
+  padding:8px 12px;
+  border-radius:4px;
+  cursor:pointer;
+}
+
+/* ── 기존 폼·테이블 등은 배경색·테두리만 살짝 어둡게 ── */
+.schedule-table th, .schedule-table td {
+  border-color:#333;
+}
+.schedule-table th { background:#1e1e1e; }
+.schedule-table td { background:#181818; }
+
+#bookingForm, #deleteForm {
+  background:#1e1e1e;
+  color:#e0e0e0;
+}
+#bookingForm input, #bookingForm select,
+#deleteForm button {
+  background:#2a2a2a;
+  color:#e0e0e0;
+  border:1px solid #444;
+}
+/* 모달 오버레이 진하게 */
+#bookingOverlay, #deleteOverlay {
+  background:rgba(0,0,0,0.7);
+}
+  
     h1,h2 { margin-bottom: 10px; }
     #loginSection { margin-bottom: 20px; }
     /* 모달 백그라운드 */
@@ -55,13 +116,20 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
-  <h1>합주 예약 시스템 ver 2.5</h1>
-  <div id="loginSection">
-    <button id="btn-google-login">구글 로그인</button>
-    <button id="btn-logout" style="display:none;">로그아웃</button>
-    <button id="btn-book-now" style="margin-left:10px; display:none;">예약하기</button>
-    <button id="btn-delete-now" style="margin-left:10px; display:none;">예약 삭제</button>
-    <div id="user-info"></div>
+  
+  <header id="mainHeader">
+    <img src="logo.png" alt="사이트 로고" id="siteLogo">
+    <div id="authContainer">
+      <span id="greeting"></span>
+      <button id="btn-google-login">로그인</button>
+      <button id="btn-logout" style="display:none;">로그아웃</button>
+    </div>
+  </header>
+  <h1>합주 예약 시스템 ver 2.6</h1>
+  
+  <div id="actionSection">
+    <button id="btn-book-now" style="display:none;">예약하기</button>
+    <button id="btn-delete-now" style="display:none;">예약 삭제</button>
   </div>
 
   <h2>이번 주 스케줄</h2>
@@ -187,7 +255,7 @@
     btnLogin.onclick=()=>auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
     btnLogout.onclick=()=>auth.signOut();
     auth.onAuthStateChanged(user=>{
-      if(user){ userInfo.textContent=`환영합니다, ${user.displayName}`;
+      if(user){ userInfo.textContent=`안녕하세요, ${user.displayName}님`;
         btnLogin.style.display='none'; btnLogout.style.display=''; btnBook.style.display=''; btnDelete.style.display=''; renderSchedule();
       } else { userInfo.textContent=''; btnLogin.style.display=''; btnLogout.style.display='none'; btnBook.style.display='none'; btnDelete.style.display='none'; document.querySelector('#weekly-schedule tbody').innerHTML=''; }
     });
