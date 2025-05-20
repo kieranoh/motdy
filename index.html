@@ -476,6 +476,18 @@ function getNextWeekMonday8() {
             start = document.getElementById('form-start').value,
              end = document.getElementById('form-end').value;
 
+
+      if (type === '합주') {
+    if (!team) {
+      alert('팀명을 입력해주세요.');
+      return;
+    }
+  } else if (type === '개인연습') {
+    if (!name) {
+      alert('이름을 입력해주세요.');
+      return;
+    }
+  }
             if(!isAdmin){
 
               const selDateStr = document.getElementById('form-date').value;           // "2025-05-26"
@@ -515,6 +527,7 @@ function getNextWeekMonday8() {
       const data = { type,date,start,end,user:auth.currentUser.uid };
       if (type==='합주') data.team = document.getElementById('form-team').value;
       else data.name = document.getElementById('form-name').value;
+      
 
       await rdb.ref('bookings').push(data);
       alert('예약이 완료되었습니다.');
