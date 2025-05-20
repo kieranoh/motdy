@@ -505,7 +505,7 @@ function getNextWeekMonday8() {
     return;
   }
   if (selDate < new Date(mon8.getFullYear(),mon8.getMonth(),mon8.getDate())
-      || selDate >= new Date(nextMon8.getFullYear(),nextMon8.getMonth(),nextMon8.getDate())) {
+      || selDate >  new Date(nextMon8.getFullYear(),nextMon8.getMonth(),nextMon8.getDate())) {
     alert('예약 가능한 날짜는 이번 주 월요일부터 일요일까지입니다.');
     return;
   }
