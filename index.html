@@ -246,7 +246,7 @@ button:hover {
     const auth = firebase.auth(), rdb = firebase.database();
     let isAdmin = false; 
 
-    function getThisWeekMonday8() {
+  function getThisWeekMonday8() {
   const now = new Date();
   const day = now.getDay();  // 일=0, 월=1…
   const mon = new Date(now);
@@ -262,7 +262,7 @@ function getThisWeekWednesday13() {
   return wed;
 }
 
-function getThisWeekSundayEnd() {
+function getNextWeekMonday8() {
   const mon8 = getThisWeekMonday8();
   const sun = new Date(mon8);
   sun.setDate(mon8.getDate() + 6);   // 월 + 6일 = 일
