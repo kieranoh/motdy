@@ -17,7 +17,7 @@
     }
     /* 모달 폼 */
     #bookingForm {
-      display: none;
+      display: false;
       position: fixed;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
@@ -41,7 +41,7 @@
       height: 30px;
       min-width: 60px;
     }
-    .schedule-table th { background: #f7f7f7; }
+    .schedule-table th { background: #f7f7f7; white-space: nowrap; }
   </style>
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -49,7 +49,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
-  <h1>합주 예약 시스템 ver1.8</h1>
+  <h1>합주 예약 시스템 ver 1.9</h1>
   <div id="loginSection">
     <button id="btn-google-login">구글 로그인</button>
     <button id="btn-logout" style="display:none;">로그아웃</button>
@@ -57,11 +57,18 @@
     <div id="user-info"></div>
   </div>
 
-  <h2>이번 주 스케줄 (월~일 8:00~23:30)</h2>
+  <h2>이번 주 스케줄</h2>
   <table class="schedule-table" id="weekly-schedule">
     <thead>
       <tr>
-        <th>시간</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th>토</th><th>일</th>
+        <th>시간</th>
+        <th data-day="0">월</th>
+        <th data-day="1">화</th>
+        <th data-day="2">수</th>
+        <th data-day="3">목</th>
+        <th data-day="4">금</th>
+        <th data-day="5">토</th>
+        <th data-day="6">일</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -91,7 +98,7 @@
   </div>
 
   <script>
-    // Firebase 설정
+    // Firebase 초기화
     const firebaseConfig = {
       apiKey: "AIzaSyCGroYj_1Mpw0GBUn0p37z4Nncl1chqLUc",
       authDomain: "motdy-2b3ea.firebaseapp.com",
@@ -106,142 +113,132 @@
     const auth = firebase.auth();
     const rdb = firebase.database();
 
-    // 빈 스케줄 그리드 렌더링 후 예약 표시 (30분 간격 모두 표시)
+    // 스케줄 렌더 및 헤더 날짜 업데이트
     async function renderSchedule() {
-      const tbody = document.querySelector('#weekly-schedule tbody');
-      tbody.innerHTML = '';
-
-      // 예약 데이터 로드 및 mapping
-      const snap = await rdb.ref('bookings').once('value');
-      const bookingMap = {};
-      snap.forEach(ch => {
-        const b = ch.val();
-        // 각 30분 블록 단위로 map에 저장
-        const [sh, sm] = b.start.split(':').map(Number);
-        const [eh, em] = b.end.split(':').map(Number);
-        let startMin = sh * 60 + sm;
-        const endMin = eh * 60 + em;
-        while (startMin < endMin) {
-          const hh = String(Math.floor(startMin/60)).padStart(2,'0');
-          const mm = String(startMin%60).padStart(2,'0');
-          bookingMap[`${b.date}_${hh}:${mm}`] = b;
-          startMin += 30;
-        }
-      });
-
+      // 헤더에 날짜 표시
       const today = new Date();
       const day = today.getDay();
       const mon = new Date(today);
       mon.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
-
-      for (let hour = 8; hour <= 23; hour++) {
-        for (let min = 0; min < 60; min += 30) {
+      const weekdays = ["월","화","수","목","금","토","일"];
+      for (let i = 0; i < 7; i++) {
+        const cell = document.querySelector(`#weekly-schedule thead th[data-day='${i}']`);
+        const d = new Date(mon);
+        d.setDate(mon.getDate() + i);
+        const dateStr = d.toISOString().slice(0,10);
+        cell.innerHTML = `${weekdays[i]}<br>${dateStr}`;
+      }
+      
+      // 바디 렌더링
+      const tbody = document.querySelector('#weekly-schedule tbody');
+      tbody.innerHTML = '';
+      const snap = await rdb.ref('bookings').once('value');
+      const bookingMap = {};
+      snap.forEach(ch => {
+        const b = ch.val();
+        let cur = b.start.split(':').reduce((h,m)=>h*60+parseInt(m),0);
+        const endMin = b.end.split(':').reduce((h,m)=>h*60+parseInt(m),0);
+        while (cur < endMin) {
+          const hh = String(Math.floor(cur/60)).padStart(2,'0');
+          const mm = String(cur%60).padStart(2,'0');
+          bookingMap[`${b.date}_${hh}:${mm}`] = b;
+          cur += 30;
+        }
+      });
+      for(let h=8; h<=23; h++){
+        for(let m of [0,30]){
           const tr = document.createElement('tr');
-          const timeLabel = `${String(hour).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
-          const th = document.createElement('th'); th.textContent = timeLabel;
-          tr.appendChild(th);
-
-          for (let i = 0; i < 7; i++) {
-            const d = new Date(mon);
-            d.setDate(mon.getDate() + i);
-            const dateStr = d.toISOString().slice(0,10);
-            const key = `${dateStr}_${timeLabel}`;
-            const td = document.createElement('td');
-            if (bookingMap[key]) {
-              td.textContent = bookingMap[key].type === '합주'
-                ? bookingMap[key].team
-                : bookingMap[key].name;
-            }
-            tr.appendChild(td);
+          const label = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+          tr.innerHTML = `<th>${label}</th>`;
+          for(let i=0;i<7;i++){
+            const d = new Date(mon); d.setDate(mon.getDate()+i);
+            const key = `${d.toISOString().slice(0,10)}_${label}`;
+            const b = bookingMap[key];
+            tr.innerHTML += `<td>${b? (b.type==='합주'? b.team : b.name) : ''}</td>`;
           }
           tbody.appendChild(tr);
         }
       }
     }
 
-    // 시간 선택 옵션 채우기 (30분 단위)
-    function populateTimeOptions(selectId) {
-      const sel = document.getElementById(selectId);
+    // 시간 옵션 채우기
+    function populateTimeOptions(id) {
+      const sel = document.getElementById(id);
       sel.innerHTML = '';
-      for (let hour = 8; hour <= 23; hour++) {
-        for (let min of [0,30]) {
-          const h = String(hour).padStart(2,'0');
-          const m = String(min).padStart(2,'0');
-          const val = `${h}:${m}`;
-          const opt = document.createElement('option'); opt.value = val; opt.textContent = val;
+      for (let h = 8; h <= 23; h++) {
+        for (let m of [0,30]) {
+          const hh = String(h).padStart(2,'0');
+          const mm = String(m).padStart(2,'0');
+          const opt = document.createElement('option'); opt.value = `${hh}:${mm}`; opt.textContent = `${hh}:${mm}`;
           sel.appendChild(opt);
         }
       }
     }
 
-    // 초기 설정: 시간 옵션 채우기 및 날짜 기본값
-populateTimeOptions('form-start');
-populateTimeOptions('form-end');
-document.getElementById('form-date').value = new Date().toISOString().slice(0,10);
-// 로그인 상태에 따라 렌더링(triggered in onAuthStateChanged)
-
-    // 유형 선택시 입력 표시
-    document.querySelectorAll('input[name="type"]').forEach(radio => {
-      radio.addEventListener('change', () => {
-        document.getElementById('label-team').style.display = radio.value==='합주'? 'block':'none';
-        document.getElementById('label-name').style.display = radio.value==='개인연습'? 'block':'none';
-      });
+    // 초기 설정
+    document.addEventListener('DOMContentLoaded', () => {
+      populateTimeOptions('form-start');
+      populateTimeOptions('form-end');
+      document.getElementById('form-date').value = new Date().toISOString().slice(0,10);
     });
 
-    // 인증 처리
+    // UI & 인증
     const btnLogin = document.getElementById('btn-google-login');
     const btnLogout = document.getElementById('btn-logout');
     const btnBook = document.getElementById('btn-book-now');
     const userInfo = document.getElementById('user-info');
     btnLogin.onclick = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
     btnLogout.onclick = () => auth.signOut();
-
     auth.onAuthStateChanged(user => {
       if (user) {
         userInfo.textContent = `환영합니다, ${user.displayName}`;
-        btnLogin.style.display = 'none';
-        btnLogout.style.display = '';
-        btnBook.style.display = '';
+        btnLogin.style.display = 'none'; btnLogout.style.display = ''; btnBook.style.display = '';
         renderSchedule();
       } else {
         userInfo.textContent = '';
-        btnLogin.style.display = '';
-        btnLogout.style.display = 'none';
-        btnBook.style.display = 'none';
+        btnLogin.style.display = ''; btnLogout.style.display = 'none'; btnBook.style.display = 'none';
+        document.querySelector('#weekly-schedule tbody').innerHTML = '';
       }
     });
 
-    // 모달 열기/닫기
+    // 모달 핸들링
     const overlay = document.getElementById('bookingOverlay');
     const formDiv = document.getElementById('bookingForm');
     const btnCancel = document.getElementById('btn-cancel');
-    const form = document.getElementById('formBooking');
     btnBook.onclick = () => { overlay.style.display='block'; formDiv.style.display='block'; };
     btnCancel.onclick = () => { formDiv.style.display='none'; overlay.style.display='none'; };
     overlay.onclick = () => btnCancel.onclick();
 
-    // 예약 유효성 및 데이터 저장
-    form.onsubmit = async (e) => {
+    // 예약 처리
+    document.getElementById('formBooking').onsubmit = async e => {
       e.preventDefault();
       const type = document.querySelector('input[name="type"]:checked').value;
       const date = document.getElementById('form-date').value;
       const start = document.getElementById('form-start').value;
       const end = document.getElementById('form-end').value;
-      const team = document.getElementById('form-team').value;
-      const name = document.getElementById('form-name').value;
-      const todayStr = new Date().toISOString().slice(0,10);
-      if (type === '개인연습' && date !== todayStr) return alert('개인연습은 당일만 예약 가능합니다.');
-      const toMins = t => { const [h,m]=t.split(':').map(Number); return h*60+m; };
-      const dur = toMins(end) - toMins(start);
+      // 충돌 검사
+      const toMins = t => t.split(':').reduce((h,m)=>h*60+parseInt(m),0);
+      const sMin = toMins(start), eMin = toMins(end);
+      const snap = await rdb.ref('bookings').orderByChild('date').equalTo(date).once('value');
+      let conflict = false;
+      snap.forEach(ch => {
+        const b = ch.val();
+        const bs = toMins(b.start), be = toMins(b.end);
+        if (sMin < be && eMin > bs) conflict = true;
+      });
+      if (conflict) { alert('이미 예약된 시간대가 있습니다.'); return; }
+      // 유효성 검사
+      if (type==='개인연습' && date !== new Date().toISOString().slice(0,10)) return alert('개인연습은 당일만 예약 가능합니다.');
+      const dur = eMin - sMin;
       if (dur < 30) return alert('최소 30분 이상 예약해야 합니다.');
       if (dur > 60) return alert('최대 60분까지 예약 가능합니다.');
-      const bookingData = { type, date, start, end };
-      if (type==='합주') bookingData.team = team;
-      else bookingData.name = name;
-      await rdb.ref('bookings').push(bookingData);
+      // 저장
+      const data = { type, date, start, end };
+      if (type==='합주') data.team = document.getElementById('form-team').value;
+      else data.name = document.getElementById('form-name').value;
+      await rdb.ref('bookings').push(data);
       alert('예약이 완료되었습니다.');
-      btnCancel.onclick();
-      renderSchedule();
+      btnCancel.onclick(); renderSchedule();
     };
   </script>
 </body>
