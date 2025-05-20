@@ -10,7 +10,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
-  <h1>합주 예약 시스템 ver 2.1</h1>
+  <h1>합주 예약 시스템 ver 2.2</h1>
   <div id="loginSection">
     <button id="btn-google-login">구글 로그인</button>
     <button id="btn-logout" style="display:none;">로그아웃</button>
@@ -38,34 +38,11 @@
 
   <!-- 예약 모달 -->
   <div id="bookingOverlay"></div>
-  <div id="bookingForm">
-    <h2>예약하기</h2>
-    <form id="formBooking">
-      <label>예약 유형:<br>
-        <label><input type="radio" name="type" value="합주" checked> 합주</label>
-        <label><input type="radio" name="type" value="개인연습"> 개인연습</label>
-      </label>
-      <label id="label-team">팀명:<br><input type="text" id="form-team" placeholder="팀명을 입력"></label>
-      <label id="label-name" style="display:none;">이름:<br><input type="text" id="form-name" placeholder="이름을 입력"></label>
-      <label>날짜:<br><input type="date" id="form-date" required></label>
-      <label>시작 시간:<br><select id="form-start" required></select></label>
-      <label>종료 시간:<br><select id="form-end" required></select></label>
-      <div style="text-align:right; margin-top:16px;">
-        <button type="button" id="btn-cancel">취소</button>
-        <button type="submit">확인</button>
-      </div>
-    </form>
-  </div>
+  <div id="bookingForm"></div>
 
   <!-- 삭제 모달 -->
   <div id="deleteOverlay"></div>
-  <div id="deleteForm">
-    <h2>예약 삭제</h2>
-    <ul id="delete-list"></ul>
-    <div style="text-align:right; margin-top:16px;">
-      <button id="btn-delete-cancel">닫기</button>
-    </div>
-  </div>
+  <div id="deleteForm"></div>
 
   <script src="app.js"></script>
 </body>
