@@ -472,7 +472,9 @@ function getNextWeekMonday8() {
       e.preventDefault();
       
       const type = document.querySelector('input[name="type"]:checked').value;
-      const date = document.getElementById('form-date').value,
+      const date = document.getElementById('form-date').value;
+      const team  = document.getElementById('form-team').value.trim();
+  const name  = document.getElementById('form-name').value.trim();
             start = document.getElementById('form-start').value,
              end = document.getElementById('form-end').value;
 
