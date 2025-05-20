@@ -29,7 +29,13 @@
       width: 360px;
     }
     #bookingForm h2, #deleteForm h2 { margin-top: 0; }
-    #bookingForm form > label, #deleteForm ul { margin: 8px 0; }
+    #bookingForm form > label, #deleteForm ul { 
+      display: block;
+      margin-bottom: 12px; }
+    #bookingForm form > label > label {
+      display: inline-block;
+      margin-right: 16px;
+    }
     #bookingForm button, #deleteForm button { margin-right: 8px; }
     #label-team, #label-name { margin-top: 8px; }
     /* 스케줄표 */
@@ -49,7 +55,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
-  <h1>합주 예약 시스템 ver 2.4</h1>
+  <h1>합주 예약 시스템 ver 2.5</h1>
   <div id="loginSection">
     <button id="btn-google-login">구글 로그인</button>
     <button id="btn-logout" style="display:none;">로그아웃</button>
@@ -150,6 +156,28 @@
     document.addEventListener('DOMContentLoaded',()=>{
       populateTimeOptions('form-start'); populateTimeOptions('form-end');
       document.getElementById('form-date').value=new Date().toISOString().slice(0,10);
+      
+      const labelTeam = document.getElementById('label-team');
+      const labelName = document.getElementById('label-name');
+
+      const initType = document.querySelector('input[name="type"]:checked').value;
+      if (initType === '개인연습') {
+        labelTeam.style.display = 'none';
+        labelName.style.display = 'block';
+      }
+
+       document.querySelectorAll('input[name="type"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        if (radio.value === '개인연습' && radio.checked) {
+          labelTeam.style.display = 'none';
+          labelName.style.display = 'block';
+        } else if (radio.value === '합주' && radio.checked) {
+          labelTeam.style.display = 'block';
+          labelName.style.display = 'none';
+        }
+      });
+    });
+    
     });
 
     // 인증 & UI
