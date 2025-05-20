@@ -31,6 +31,39 @@ function toMins(t) {
   const [h,m] = t.split(':').map(Number);
   return h * 60 + m;
 }
+// 시간 옵션
+function populateTimeOptions(id) {
+  const sel = document.getElementById(id);
+  sel.innerHTML = '';
+  for (let h = 8; h <= 23; h++) {
+    for (let m of [0,30]) {
+      const hh = String(h).padStart(2,'0');
+      const mm = String(m).padStart(2,'0');
+      const opt = document.createElement('option');
+      opt.value = `${hh}:${mm}`;
+      opt.textContent = `${hh}:${mm}`;
+      sel.appendChild(opt);
+    }
+  }
+}
+
+// 초기 설정
+document.addEventListener('DOMContentLoaded', () => {
+  populateTimeOptions('form-start');
+  populateTimeOptions('form-end');
+  document.getElementById('form-date').value = new Date().toISOString().slice(0,10);
+
+  // 예약 유형 변경 시 입력 필드 토글
+  document.querySelectorAll('input[name="type"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      document.getElementById('label-team').style.display =
+        radio.value === '합주' ? 'block' : 'none';
+      document.getElementById('label-name').style.display =
+        radio.value === '개인연습' ? 'block' : 'none';
+    });
+  });
+});
+
 
 // 스케줄 렌더링
 async function renderSchedule() {
