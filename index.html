@@ -158,7 +158,7 @@ button:hover {
     </div>
   </header>
 
-  <h1>합주 예약 시스템 ver 3.0</h1>
+  <h1>합주 예약 시스템 ver 3.1</h1>
 
   <div id="actionSection">
     <button id="btn-book-now" style="display:none;">예약하기</button>
@@ -323,30 +323,34 @@ button:hover {
     btnLogout.onclick = () => auth.signOut();
 
     auth.onAuthStateChanged(async user => {
-      isAdmin = false;
-      if (user) {
-        greeting.textContent = `안녕하세요, ${user.displayName}님`;
-        greeting.style.display = 'inline';
-        btnLogin.style.display = 'none';
-        btnLogout.style.display = 'inline';
-        btnBook.style.display = 'inline';
-        btnDelete.style.display = 'inline';
+  isAdmin = false;
+  if (user) {
+    // 인사말, 버튼 토글(로그인/로그아웃/예약/삭제 버튼 보이기)
+    greeting.textContent = `안녕하세요, ${user.displayName}님`;
+    greeting.style.display = 'inline';
+    btnLogin.style.display  = 'none';
+    btnLogout.style.display = 'inline';
+    btnBook.style.display   = 'inline';
+    btnDelete.style.display = 'inline';
 
-        const snap = await rdb.ref('admins/' + user.uid).once('value');
-        if (snap.val() === true) {
-          isAdmin = true;
-        }
-        
-      } else {
-        greeting.style.display = 'none';
-        btnLogin.style.display = 'inline';
-        btnLogout.style.display = 'none';
-        btnBook.style.display = 'none';
-        btnDelete.style.display = 'none';
-        document.querySelector('#weekly-schedule tbody').innerHTML = '';
-      }
-      renderSchedule();
-    });
+    // 관리자 여부 확인 (/admins/{uid} 경로)
+    const snap = await rdb.ref('admins/' + user.uid).once('value');
+    if (snap.val() === 'true') {
+      isAdmin = true;
+      // 관리자 전용 UI 추가 변경이 필요하면 여기서!
+    }
+  } else {
+    // 비로그인 상태
+    greeting.style.display  = 'none';
+    btnLogin.style.display  = 'inline';
+    btnLogout.style.display = 'none';
+    btnBook.style.display   = 'none';
+    btnDelete.style.display = 'none';
+  }
+
+  // 로그인 유무 상관없이 스케줄 렌더
+  renderSchedule();
+});
 
     // 모달 열기/닫기 & 삭제 로직
     const overlay = document.getElementById('bookingOverlay'),
@@ -417,6 +421,7 @@ button:hover {
       : '<li>예약 내역이 없습니다.</li>';  // 일반 유저 메시지와 동일
   }
 };
+
     btnDeleteCancel.onclick = () => { deleteForm.style.display = 'none'; deleteOverlay.style.display = 'none'; };
     deleteOverlay.onclick = () => btnDeleteCancel.onclick();
 
