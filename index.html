@@ -158,7 +158,7 @@ button:hover {
     </div>
   </header>
 
-  <h1>합주 예약 시스템 ver 2.10</h1>
+  <h1>합주 예약 시스템 ver 2.11</h1>
 
   <div id="actionSection">
     <button id="btn-book-now" style="display:none;">예약하기</button>
@@ -288,6 +288,8 @@ button:hover {
       populateTimeOptions('form-end');
       document.getElementById('form-date').value = new Date().toISOString().slice(0,10);
 
+      renderSchedule();
+
       // 타입별 라벨 토글
       const labelTeam = document.getElementById('label-team');
       const labelName = document.getElementById('label-name');
@@ -327,7 +329,7 @@ button:hover {
         btnLogout.style.display = 'inline';
         btnBook.style.display = 'inline';
         btnDelete.style.display = 'inline';
-        renderSchedule();
+        
       } else {
         greeting.style.display = 'none';
         btnLogin.style.display = 'inline';
@@ -336,6 +338,7 @@ button:hover {
         btnDelete.style.display = 'none';
         document.querySelector('#weekly-schedule tbody').innerHTML = '';
       }
+      renderSchedule();
     });
 
     // 모달 열기/닫기 & 삭제 로직
