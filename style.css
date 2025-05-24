@@ -125,11 +125,14 @@ button:hover {
       background:#1e1e1e;
       color:#e0e0e0;
     }
-    #bookingForm input[type="date"]::-webkit-calendar-picker-indicator {
+   #bookingForm input[type="date"] {
+  /* flatpickr가 추가한 readonly/apearance 리셋 속성 제거 */
+  appearance: auto;
+}
+#bookingForm input[type="date"]::-webkit-calendar-picker-indicator {
   display: block;
   cursor: pointer;
-  filter: invert(1);       /* 다크 모드에 대비 */
-  width: 1.2em; height: 1.2em;
+  filter: invert(1); /* 다크 모드 대비 */
 }
     #bookingForm select,
     #deleteForm button {
