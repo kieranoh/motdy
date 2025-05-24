@@ -109,11 +109,8 @@ function getNextWeekMonday8() {
     minDate: mon8,              // 이번 주 월요일
     maxDate: new Date(nextMon8.getTime()), // 다음 주 월요일 직전
     weekNumbers: false,
-    firstDayOfWeek: 1,           // 월요일을 주 시작으로
-    clickOpens: false 
+    firstDayOfWeek: 1
   });
-  document.getElementById('btn-date-trigger')
-  .addEventListener('click', () => datePicker.open());
 
       // 타입별 라벨 토글
       const labelTeam = document.getElementById('label-team');

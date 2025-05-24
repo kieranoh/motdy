@@ -125,7 +125,13 @@ button:hover {
       background:#1e1e1e;
       color:#e0e0e0;
     }
-    #bookingForm input, #bookingForm select,
+    #bookingForm input[type="date"]::-webkit-calendar-picker-indicator {
+  display: block;
+  cursor: pointer;
+  filter: invert(1);       /* 다크 모드에 대비 */
+  width: 1.2em; height: 1.2em;
+}
+    #bookingForm select,
     #deleteForm button {
       background:#2a2a2a;
       color:#e0e0e0;
