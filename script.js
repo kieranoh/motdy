@@ -33,18 +33,22 @@ function getNextWeekMonday8() {
     // 스케줄 렌더링
     
     async function renderSchedule() {
-      const today = new Date(), day = today.getDay(), mon = new Date(today);
-      mon.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
-      const weekdays = ["월","화","수","목","금","토","일"];
-      for (let i=1; i<8; i++) {
-        const cell = document.querySelector(`#weekly-schedule thead th[data-day='${i}']`);
+      const today = new Date();
+// Sunday(0)을 7로 바꿔서 mon 계산
+const dayNum = today.getDay() || 7;   // Sunday(0) → 7, Mon→1,…Sat→6
+const mon = new Date(today);
+mon.setDate(today.getDate() - (dayNum - 1));  // 무조건 '이번 주 월요일'
+
+const weekdays = ["월","화","수","목","금","토","일"];
+for (let i = 0; i < 7; i++) {
   const d = new Date(mon);
   d.setDate(mon.getDate() + i);
-
-  // 'sv' 로케일을 쓰면 YYYY-MM-DD 포맷을 반환합니다
   const isoDate = d.toLocaleDateString('sv');
+  const cell = document.querySelector(
+    `#weekly-schedule thead th[data-day='${i}']`
+  );
   cell.innerHTML = `${weekdays[i]}<br>${isoDate}`;
-      }
+}
       const tbody = document.querySelector('#weekly-schedule tbody');
       tbody.innerHTML = '';
       const snap = await rdb.ref('bookings').once('value'), bookingMap = {};
