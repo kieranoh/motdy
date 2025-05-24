@@ -245,6 +245,7 @@ button:hover {
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth(), rdb = firebase.database();
     let isAdmin = false; 
+    let datePicker;
 
     function getThisWeekMonday8() {
   const now = new Date();
@@ -330,7 +331,7 @@ function getNextWeekMonday8() {
     const nextMon8 = getNextWeekMonday8();
     const toYMD = d => d.toISOString().slice(0,10);
 
-    flatpickr("#form-date", {
+    datePicker =  flatpickr("#form-date", {
     locale: "ko",              // 한글 로케일
     dateFormat: "Y-m-d",
     defaultDate: new Date(),    // 오늘
@@ -395,6 +396,13 @@ function getNextWeekMonday8() {
     btnLogout.style.display = 'none';
     btnBook.style.display   = 'none';
     btnDelete.style.display = 'none';
+  }
+  if (isAdmin) {
+    datePicker.set('minDate', null);
+    datePicker.set('maxDate', null);
+  } else {
+    datePicker.set('minDate', getThisWeekMonday8());
+    datePicker.set('maxDate', getNextWeekMonday8());
   }
 
   // 로그인 유무 상관없이 스케줄 렌더
