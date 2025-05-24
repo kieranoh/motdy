@@ -41,14 +41,18 @@ mon.setDate(today.getDate() - (dayNum - 1));  // 무조건 '이번 주 월요일
 
 const weekdays = ["월","화","수","목","금","토","일"];
 for (let i = 0; i < 7; i++) {
-  const d = new Date(mon);
-  d.setDate(mon.getDate() + i);
-  const isoDate = d.toLocaleDateString('sv');
-  const cell = document.querySelector(
-    `#weekly-schedule thead th[data-day='${i}']`
-  );
-  cell.innerHTML = `${weekdays[i]}<br>${isoDate}`;
-}
+    const cell = document.querySelector(
+      `#weekly-schedule thead th[data-day='${i}']`
+    );
+    // 월요일 기준 날짜 복사 후 i일 더하기
+    const d = new Date(mon);
+    d.setDate(mon.getDate() + i);
+
+    // 'sv' 로케일(YYYY-MM-DD)로 포맷
+    const isoDate = d.toLocaleDateString("sv");  
+    cell.innerHTML = `${weekdays[i]}<br>${isoDate}`;
+  }
+  // ──
       const tbody = document.querySelector('#weekly-schedule tbody');
       tbody.innerHTML = '';
       const snap = await rdb.ref('bookings').once('value'), bookingMap = {};
