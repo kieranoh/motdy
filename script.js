@@ -38,8 +38,12 @@ function getNextWeekMonday8() {
       const weekdays = ["월","화","수","목","금","토","일"];
       for (let i=0; i<7; i++) {
         const cell = document.querySelector(`#weekly-schedule thead th[data-day='${i}']`);
-        const d = new Date(mon); d.setDate(mon.getDate() + i);
-        cell.innerHTML = `${weekdays[i]}<br>${d.toISOString().slice(0,10)}`;
+  const d = new Date(mon);
+  d.setDate(mon.getDate() + i);
+
+  // 'sv' 로케일을 쓰면 YYYY-MM-DD 포맷을 반환합니다
+  const isoDate = d.toLocaleDateString('sv');
+  cell.innerHTML = `${weekdays[i]}<br>${isoDate}`;
       }
       const tbody = document.querySelector('#weekly-schedule tbody');
       tbody.innerHTML = '';
