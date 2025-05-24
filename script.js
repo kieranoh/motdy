@@ -65,7 +65,8 @@ function getNextWeekMonday8() {
           tr.innerHTML = `<th>${label}</th>`;
           for (let i=0; i<7; i++) {
             const d = new Date(mon); d.setDate(mon.getDate()+i);
-            const key = `${d.toISOString().slice(0,10)}_${label}`,
+            const isoDate = d.toLocaleDateString('sv');  // "YYYY-MM-DD"
+const key     = `${isoDate}_${label}`;
                   b = bookingMap[key];
             tr.innerHTML += `<td>${b? (b.type==='합주'?b.team:b.name):''}</td>`;
           }
@@ -93,7 +94,7 @@ function getNextWeekMonday8() {
     document.addEventListener('DOMContentLoaded', () => {
       populateTimeOptions('form-start');
       populateTimeOptions('form-end');
-      document.getElementById('form-date').value = new Date().toISOString().slice(0,10);
+       document.getElementById('form-date').value = new Date().toLocaleDateString('sv');
 
       renderSchedule();
 
