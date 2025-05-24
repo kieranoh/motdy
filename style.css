@@ -1,0 +1,149 @@
+/* ─── 원본 (라이트 모드) ─── */
+    h1,h2 { margin-bottom:10px; }
+    /* 모달 백그라운드 */
+    #bookingOverlay, #deleteOverlay {
+      display:none;
+      position:fixed;
+      top:0; left:0; right:0; bottom:0;
+      background: rgba(0,0,0,0.5);
+      z-index:999;
+    }
+    /* 모달 폼 */
+    #bookingForm, #deleteForm {
+      display:none;
+      position:fixed;
+      top:50%; left:50%;
+      transform: translate(-50%,-50%);
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index:1000;
+      width:360px;
+    }
+    #bookingForm h2, #deleteForm h2 { margin-top:0; }
+    #bookingForm form > label, #deleteForm ul {
+      display:block;
+      margin-bottom:12px;
+    }
+    #bookingForm form > label > label {
+      display:inline-block;
+      margin-right:16px;
+    }
+    #bookingForm button, #deleteForm button { margin-right:8px; }
+    #label-team, #label-name { margin-top:8px; }
+    /* 스케줄표 */
+    .schedule-table {
+      border-collapse:collapse;
+      width:100%;
+      margin-top:20px;
+      font-size:1rem;
+    }
+    .schedule-table th, .schedule-table td {
+      border:1px solid #ccc;
+      padding:8px;
+      text-align:center;
+      height:30px;
+      min-width:60px;
+    }
+    .schedule-table th { background:#f7f7f7; white-space:nowrap; }
+
+    /* ─── 다크 모드 오버라이드 ─── */
+    body {
+      background:#121212;
+      color:#e0e0e0;
+      font-family:sans-serif;
+      padding:20px;
+    }
+    a, button { color:inherit; }
+
+    /* 헤더 */
+    #mainHeader {
+       position: relative;
+    text-align: center;      /* 로고를 가운데로 */
+    padding: 10px 0;
+    border-bottom: 1px solid #333;
+    }
+    #siteLogo {
+      position: relative;      /* 절대위치 해제 */
+    display: inline-block;   /* text-align:center 에 반응 */
+    max-height: 60px;        /* 헤더 높이에 맞출 최대치 */
+    width: auto;
+    height: auto;
+    }
+    #authContainer {
+      position: absolute;
+    top: 50%;
+    right: 20px;             /* 원하는 여백만큼 조정 */
+    transform: translateY(-50%);
+   display: flex;
+    align-items: center;
+    }
+    #greeting {
+      margin-right:12px;
+      font-size:0.9rem;
+    }
+
+    /* 액션영역 (예약/삭제) */
+    #actionSection {
+      margin:16px 0;
+    }
+    button {
+  background: #2a2a2a;
+  color: #e0e0e0;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background .2s;
+  }
+button:hover {
+  background: #333;
+}
+    #actionSection button {
+      margin-right:8px;
+      background:#1f1f1f;
+      border:1px solid #444;
+      padding:8px 12px;
+      border-radius:4px;
+      cursor:pointer;
+    }
+
+    /* 테이블 다크 모드 */
+    .schedule-table th {
+      background:#1e1e1e;
+      border-color:#333;
+    }
+    .schedule-table td {
+      background:#181818;
+      border-color:#333;
+    }
+
+    /* 폼 다크 모드 */
+    #bookingForm, #deleteForm {
+      background:#1e1e1e;
+      color:#e0e0e0;
+    }
+    #bookingForm input, #bookingForm select,
+    #deleteForm button {
+      background:#2a2a2a;
+      color:#e0e0e0;
+      border:1px solid #444;
+    }
+
+    /* 모달 오버레이 진하게 */
+    #bookingOverlay, #deleteOverlay {
+      background:rgba(0,0,0,0.7);
+    }
+    #mainFooter {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #888;
+  margin-top: 24px;
+}
+@media (prefers-color-scheme: dark) {
+  #mainFooter {
+    color: #aaa;
+  }
+}
