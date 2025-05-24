@@ -36,7 +36,7 @@ function getNextWeekMonday8() {
       const today = new Date(), day = today.getDay(), mon = new Date(today);
       mon.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
       const weekdays = ["월","화","수","목","금","토","일"];
-      for (let i=0; i<7; i++) {
+      for (let i=1; i<8; i++) {
         const cell = document.querySelector(`#weekly-schedule thead th[data-day='${i}']`);
   const d = new Date(mon);
   d.setDate(mon.getDate() + i);
