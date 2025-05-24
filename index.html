@@ -61,7 +61,13 @@
       </label>
       <label id="label-team">팀명:<br><input type="text" id="form-team" placeholder="팀명을 입력"></label>
       <label id="label-name" style="display:none;">이름:<br><input type="text" id="form-name" placeholder="이름을 입력"></label>
-      <label>날짜:<br><input type="date" id="form-date" required></label>
+      <label>날짜:<br><div style="position:relative;">
+    <input type="text" id="form-date" readonly>
+    <button type="button" id="btn-date-trigger" style="
+      position:absolute; right:8px; top:50%; transform:translateY(-50%);
+      background:none; border:none; cursor:pointer;
+    ">📅</button>
+  </div></label>
       <label>시작 시간:<br><select id="form-start" required></select></label>
       <label>종료 시간:<br><select id="form-end" required></select></label>
       <div style="text-align:right; margin-top:16px;">
