@@ -316,6 +316,11 @@ dateInput.setAttribute('max', nextYmd);
               const now      = new Date();
               const mon830 = new Date(mon8);
               mon830.setHours(8, 30, 0, 0);
+              const toYMD = d => [
+  d.getFullYear(),
+  String(d.getMonth()+1).padStart(2,'0'),
+  String(d.getDate()).padStart(2,'0')
+].join('-');
               
    if (type=='개인연습'){
     if (now < mon830) {
