@@ -298,11 +298,20 @@ const key     = `${isoDate}_${label}`;
               const mon8     = getThisWeekMonday8();                                  // 이번 주 월 08:00
               const nextMon8 = getNextWeekMonday8();                                  // 다음 주 월 08:00
               const now      = new Date();
+              const mon830 = new Date(mon8);
+              mon830.setHours(8, 30, 0, 0);
               
-
-   if (now < mon8) {
-    alert('이번 주 예약은 매주 월요일 오전 8시 이후에만 가능합니다.');
+   if (type=='개인연습습'){
+    if (now < mon830) {
+    alert('개인연습 예약은 매주 월요일 8시 30 이후에만 가능합니다.');
     return;
+   } 
+  }
+  else{
+    if (now < mon8) {
+        alert('합주 예약은 매주 월요일 오전 8시 이후에만 가능합니다.');
+        return;
+      }
   }
   if (selDate < new Date(mon8.getFullYear(),mon8.getMonth(),mon8.getDate())
       || selDate >  new Date(nextMon8.getFullYear(),nextMon8.getMonth(),nextMon8.getDate())) {
