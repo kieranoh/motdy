@@ -11,6 +11,8 @@
     /* 모달 폼 */
     #bookingForm, #deleteForm {
       display:none;
+      max-height: 80vh;
+      overflow-y: auto;
       position:fixed;
       top:50%; left:50%;
       transform: translate(-50%,-50%);
