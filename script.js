@@ -316,7 +316,7 @@ const key     = `${isoDate}_${label}`;
       }
       
 
-      const data = { type,date,start,end,user:auth.currentUser.uid };
+      const data = { type,date,start,end,user:auth.currentUser.uid ,username:user.displayName};
       if (type==='합주') data.team = document.getElementById('form-team').value;
       else data.name = document.getElementById('form-name').value;
       
