@@ -147,6 +147,7 @@ const key     = `${isoDate}_${label}`;
           btnLogout = document.getElementById('btn-logout'),
           btnBook = document.getElementById('btn-book-now'),
           btnDelete = document.getElementById('btn-delete-now'),
+           btnPruneOld = document.getElementById('btn-prune-old'),
           greeting = document.getElementById('greeting');
 
     btnLogin.onclick = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
