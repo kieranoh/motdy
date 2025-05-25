@@ -105,19 +105,30 @@ const key     = `${isoDate}_${label}`;
        document.getElementById('form-date').value = new Date().toLocaleDateString('sv');
 
       renderSchedule();
+      const toYMD = d => [
+  d.getFullYear(),
+  String(d.getMonth()+1).padStart(2,'0'),
+  String(d.getDate()).padStart(2,'0')
+].join('-');
 
-      const dateInput = document.getElementById('form-date');
-    const mon8 = getThisWeekMonday8();
-    const nextMon8 = getNextWeekMonday8();
-    const toYMD = d => d.toISOString().slice(0,10);
+
+const monDate  = new Date(mon8.getFullYear(), mon8.getMonth(), mon8.getDate());
+const nextMon8 = getNextWeekMonday8();
+const nextDate = new Date(nextMon8.getFullYear(), nextMon8.getMonth(), nextMon8.getDate());
+
+const monYmd     = toYMD(monDate);
+const nextYmd    = toYMD(nextDate);
+const dateInput = document.getElementById('form-date');
+dateInput.setAttribute('type', 'text');      // 반드시 text로 바꿔야 iOS 네이티브 차단
+dateInput.setAttribute('min', monYmd);
+dateInput.setAttribute('max', nextYmd);
 
     datePicker =  flatpickr("#form-date", {
     locale: "ko",              // 한글 로케일
     dateFormat: "Y-m-d",
     defaultDate: new Date(),    // 오늘
-    minDate: mon8,              // 이번 주 월요일
-    maxDate: new Date(nextMon8.getTime()), // 다음 주 월요일 직전
-    weekNumbers: false,
+    minDate: monYmd,              // 이번 주 월요일
+    maxDate:nextYmd, // 다음 주 월요일 직전
     firstDayOfWeek: 1,
     disableMobile: true 
   });
