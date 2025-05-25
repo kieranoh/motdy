@@ -118,7 +118,8 @@ const key     = `${isoDate}_${label}`;
     minDate: mon8,              // 이번 주 월요일
     maxDate: new Date(nextMon8.getTime()), // 다음 주 월요일 직전
     weekNumbers: false,
-    firstDayOfWeek: 1
+    firstDayOfWeek: 1,
+    disableMobile: true 
   });
 
       // 타입별 라벨 토글
