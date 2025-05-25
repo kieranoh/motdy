@@ -190,6 +190,9 @@ const key     = `${isoDate}_${label}`;
     datePicker.set('minDate', getThisWeekMonday8());
     datePicker.set('maxDate', getNextWeekMonday8());
   }
+   btnBook    .style.display = user ? 'inline' : 'none';
+  btnDelete  .style.display = user ? 'inline' : 'none';
+  btnPruneOld.style.display = isAdmin ? 'inline' : 'none';
 
   // 로그인 유무 상관없이 스케줄 렌더
   renderSchedule();
@@ -322,7 +325,7 @@ const key     = `${isoDate}_${label}`;
       }
       
 
-      const data = { type,date,start,end,user:auth.currentUser.uid ,username:user.displayName};
+      const data = { type,date,start,end,user:auth.currentUser.uid ,username:auth.currentUser.displayName};
       if (type==='합주') data.team = document.getElementById('form-team').value;
       else data.name = document.getElementById('form-name').value;
       
@@ -332,3 +335,48 @@ const key     = `${isoDate}_${label}`;
       btnCancel.onclick();
       renderSchedule();
     };
+    btnPruneOld.onclick = async () => {
+// 1) 이번 주 월요일 & 그 전날(지난주 일요일) 계산
+const today = new Date(),
+day = today.getDay(),
+mon = new Date(today);
+mon.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
+const lastSun = new Date(mon);
+lastSun.setDate(mon.getDate() - 1);
+const threshold = lastSun.toLocaleDateString('sv'); // "YYYY-MM-DD"
+
+// 2) 삭제 대상 스냅샷 읽기
+const snap = await rdb.ref('bookings').once('value');
+const toDelete = [];
+snap.forEach(ch => {
+const b = ch.val();
+if (b.date < threshold) {
+toDelete.push({ key: ch.key, ...b });
+}
+});
+
+// 3) 대상이 없으면 알림 후 종료
+if (toDelete.length === 0) {
+return alert('삭제할 지난 데이터가 없습니다.');
+}
+
+// 4) 미리보기 메시지 만들기
+let msg = 다음 ${toDelete.length}개의 예약이 삭제 대상입니다:\n\n;
+toDelete.forEach(b => {
+const who = b.type==='합주' ? b.team : b.name;
+const name = b.userName ? / 예약자: ${b.userName} : '';
+msg += ${b.date} ${b.start}-${b.end} ${b.type}(${who})${name}\n;
+});
+msg += \n정말 삭제하시겠습니까?;
+
+// 5) 확인 다이얼로그
+if (!confirm(msg)) return;
+
+// 6) 삭제 실행
+toDelete.forEach(b => {
+rdb.ref('bookings/' + b.key).remove();
+});
+
+alert('지난 데이터가 모두 삭제되었습니다.');
+renderSchedule();
+};
