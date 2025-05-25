@@ -111,7 +111,7 @@ const key     = `${isoDate}_${label}`;
   String(d.getDate()).padStart(2,'0')
 ].join('-');
 
-
+const mon8 = getThisWeekMonday8();
 const monDate  = new Date(mon8.getFullYear(), mon8.getMonth(), mon8.getDate());
 const nextMon8 = getNextWeekMonday8();
 const nextDate = new Date(nextMon8.getFullYear(), nextMon8.getMonth(), nextMon8.getDate());
