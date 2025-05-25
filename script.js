@@ -164,6 +164,9 @@ const key     = `${isoDate}_${label}`;
     btnDelete.style.display = 'inline';
 
     // 관리자 여부 확인 (/admins/{uid} 경로)
+    const siteLogo = document.getElementById('siteLogo');
+      siteLogo.src = 'logo.png';   
+      siteLogo.alt = '로고'; 
     const snap = await rdb.ref('admins/' + user.uid).once('value');
     if (snap.val() === true) {
       isAdmin = true;
@@ -172,9 +175,7 @@ const key     = `${isoDate}_${label}`;
       siteLogo.alt = '관리자 로고'; 
       // 관리자 전용 UI 추가 변경이 필요하면 여기서!
     }
-    const siteLogo = document.getElementById('siteLogo');
-      siteLogo.src = 'logo.png';   
-      siteLogo.alt = '로고'; 
+    
   } else {
     // 비로그인 상태
     greeting.style.display  = 'none';
