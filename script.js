@@ -301,7 +301,7 @@ const key     = `${isoDate}_${label}`;
               const mon830 = new Date(mon8);
               mon830.setHours(8, 30, 0, 0);
               
-   if (type=='개인연습습'){
+   if (type=='개인연습'){
     if (now < mon830) {
     alert('개인연습 예약은 매주 월요일 8시 30 이후에만 가능합니다.');
     return;
