@@ -167,6 +167,9 @@ const key     = `${isoDate}_${label}`;
     const snap = await rdb.ref('admins/' + user.uid).once('value');
     if (snap.val() === true) {
       isAdmin = true;
+      const siteLogo = document.getElementById('siteLogo');
+      siteLogo.src = 'logo_admin.png';   
+      siteLogo.alt = '관리자 로고'; 
       // 관리자 전용 UI 추가 변경이 필요하면 여기서!
     }
   } else {
