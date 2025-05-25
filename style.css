@@ -158,3 +158,32 @@ button:hover {
     color: #aaa;
   }
 }
+#deleteForm::-webkit-scrollbar,
+#delete-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+#deleteForm::-webkit-scrollbar-track,
+#delete-list::-webkit-scrollbar-track {
+  background: #2a2a2a;    /* 트랙 배경 */
+  border-radius: 4px;
+}
+
+#deleteForm::-webkit-scrollbar-thumb,
+#delete-list::-webkit-scrollbar-thumb {
+  background-color: #555; /* 스크롤바 손잡이 */
+  border-radius: 4px;
+  border: 2px solid #2a2a2a; /* 트랙과 분리 */
+}
+
+#deleteForm::-webkit-scrollbar-thumb:hover,
+#delete-list::-webkit-scrollbar-thumb:hover {
+  background-color: #777; /* 호버 시 밝게 */
+}
+
+/* ── Firefox ── */
+#deleteForm,
+#delete-list {
+  scrollbar-width: thin;                   /* 얇은 스크롤바 */
+  scrollbar-color: #555 #2a2a2a;           /* thumb 색 / track 색 */
+}
