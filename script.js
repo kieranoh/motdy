@@ -97,6 +97,10 @@ const key     = `${isoDate}_${label}`;
           sel.appendChild(opt);
         }
       }
+      const optMid = document.createElement('option');
+  optMid.value = '00:00';
+  optMid.textContent = '00:00';
+  sel.appendChild(optMid);
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -340,9 +344,13 @@ dateInput.setAttribute('max', nextYmd);
         if (sMin < be && eMin > bs) conflict = true;
       });
       if (conflict) { alert('이미 예약된 시간대가 있습니다.'); return; }
-      if (type==='개인연습' && date !== new Date().toISOString().slice(0,10)) {
-        return alert('개인연습은 당일만 예약 가능합니다.');
+      if (type === '개인연습') {
+      const todayStr = toYMD(new Date());
+      if (date !== todayStr) {
+        alert('개인연습은 당일만 예약 가능합니다.');
+        return;
       }
+    }
       const dur = eMin - sMin;
       if (dur < 30) return alert('최소 30분 이상 예약해야 합니다.');
       if (dur > 60) return alert('최대 60분까지 예약 가능합니다.');        
