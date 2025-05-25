@@ -336,24 +336,45 @@ const key     = `${isoDate}_${label}`;
       renderSchedule();
     };
     btnPruneOld.onclick = async () => {
-  // 기준: “이번 주 월요일”을 구해서, 그 하루 전(지난주 일요일)까지 삭제
+  // 1) 이번 주 월요일 & 그 전날(지난주 일요일) 계산
   const today = new Date(),
         day   = today.getDay(),
         mon   = new Date(today);
-  mon.setDate(today.getDate() - (day === 0 ? 6 : day - 1));  // 이번 주 월요일
+  mon.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
   const lastSun = new Date(mon);
-  lastSun.setDate(mon.getDate() - 1);                        // 그 전날(일요일)
-  const threshold = lastSun.toLocaleDateString('sv');        // "YYYY-MM-DD"
+  lastSun.setDate(mon.getDate() - 1);
+  const threshold = lastSun.toLocaleDateString('sv'); // "YYYY-MM-DD"
 
-  if (!confirm(`${threshold} 이전의 모든 예약을 삭제하시겠습니까?`)) return;
-
+  // 2) 삭제 대상 스냅샷 읽기
   const snap = await rdb.ref('bookings').once('value');
-  snap.forEach(child => {
-    const b = child.val();
-    // b.date 역시 "YYYY-MM-DD" 형태이므로 문자열 비교가 가능
+  const toDelete = [];
+  snap.forEach(ch => {
+    const b = ch.val();
     if (b.date < threshold) {
-      rdb.ref('bookings/' + child.key).remove();
+      toDelete.push({ key: ch.key, ...b });
     }
+  });
+
+  // 3) 대상이 없으면 알림 후 종료
+  if (toDelete.length === 0) {
+    return alert('삭제할 지난 데이터가 없습니다.');
+  }
+
+  // 4) 미리보기 메시지 만들기
+  let msg = `다음 ${toDelete.length}개의 예약이 삭제 대상입니다:\n\n`;
+  toDelete.forEach(b => {
+    const who = b.type === '합주' ? b.team : b.name;
+    const name = b.userName ? ` / 예약자: ${b.userName}` : '';
+    msg += `${b.date} ${b.start}-${b.end} ${b.type}(${who})${name}\n`;
+  });
+  msg += `\n정말 삭제하시겠습니까?`;
+
+  // 5) 확인 다이얼로그
+  if (!confirm(msg)) return;
+
+  // 6) 삭제 실행
+  toDelete.forEach(b => {
+    rdb.ref('bookings/' + b.key).remove();
   });
 
   alert('지난 데이터가 모두 삭제되었습니다.');
