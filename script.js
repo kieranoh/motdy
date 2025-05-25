@@ -353,7 +353,7 @@ const key     = `${isoDate}_${label}`;
   const toDelete = [];
   snap.forEach(ch => {
     const b = ch.val();
-    if (b.date < threshold) {
+    if (b.date <= threshold) {
       toDelete.push({ key: ch.key, ...b });
     }
   });
