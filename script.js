@@ -183,6 +183,7 @@ const key     = `${isoDate}_${label}`;
     btnLogout.style.display = 'none';
     btnBook.style.display   = 'none';
     btnDelete.style.display = 'none';
+    btnPruneOld.style.display = 'none';  
   }
   if (isAdmin) {
     datePicker.set('minDate', null);
