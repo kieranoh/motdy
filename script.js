@@ -15,7 +15,8 @@
     let datePicker;
 
     function getThisWeekMonday8() {
-  const now = new Date();
+  const now =
+   new Date();
   const day = now.getDay();  // 일=0, 월=1…
   const mon = new Date(now);
   mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
@@ -108,7 +109,7 @@ const key     = `${isoDate}_${label}`;
       populateTimeOptions('form-end');
        document.getElementById('form-date').value = new Date().toLocaleDateString('sv');
 
-      renderSchedule();
+      //srenderSchedule();
       const toYMD = d => [
   d.getFullYear(),
   String(d.getMonth()+1).padStart(2,'0'),
