@@ -2,7 +2,7 @@
     const firebaseConfig = {
       apiKey: "AIzaSyCGroYj_1Mpw0GBUn0p37z4Nncl1chqLUc",
       authDomain: "motdy-2b3ea.firebaseapp.com",
-      databaseURL: "https://motdy-2b3ea-default-rtdb.firebaseio.com/",
+      databaseURL: "https://motdy-98e23-default-rtdb.firebaseio.com/",
       projectId: "motdy-2b3ea",
       storageBucket: "motdy-2b3ea.firebasestorage.app",
       messagingSenderId: "376404804075",
