@@ -1,14 +1,14 @@
  // Firebase 초기화
     const firebaseConfig = {
-      apiKey: "AIzaSyCGroYj_1Mpw0GBUn0p37z4Nncl1chqLUc",
-      authDomain: "motdy-2b3ea.firebaseapp.com",
-      databaseURL: "https://motdy-98e23-default-rtdb.firebaseio.com/",
-      projectId: "motdy-2b3ea",
-      storageBucket: "motdy-2b3ea.firebasestorage.app",
-      messagingSenderId: "376404804075",
-      appId: "1:376404804075:web:d4d85f0baab14fe3a859ae",
-      measurementId: "G-F2W9Y511E6"
-    };
+    apiKey: "AIzaSyCW5U1_JbfZYC2WvV9vQKmXVRl2JeqkJ6s",
+    authDomain: "motdy-98e23.firebaseapp.com",
+    databaseURL: "https://motdy-98e23-default-rtdb.firebaseio.com",
+    projectId: "motdy-98e23",
+    storageBucket: "motdy-98e23.firebasestorage.app",
+    messagingSenderId: "1048963561245",
+    appId: "1:1048963561245:web:a24d5e21cddbf4163993f4",
+    measurementId: "G-22KXNZ4NR9"
+  };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth(), rdb = firebase.database();
     let isAdmin = false; 
