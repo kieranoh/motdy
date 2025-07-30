@@ -335,9 +335,31 @@ dateInput.setAttribute('max', nextYmd);
         return;
       }
   }
-  if (selDate < new Date(mon8.getFull간
-      if (dur > 180) return alert('최대 3시간까지 예약 가능합니다.');        //최대시간
+  if (selDate < new Date(mon8.getFullYear(),mon8.getMonth(),mon8.getDate())
+      || selDate >  new Date(nextMon8.getFullYear(),nextMon8.getMonth(),nextMon8.getDate())) {
+    alert('예약 가능한 날짜는 이번 주 월요일부터 일요일까지입니다.');
+    return;
+  }
+              const toMins = t => t.split(':').reduce((h,m)=>h*60+parseInt(m),0),
+            sMin = toMins(start), eMin = toMins(end);
+      const snap = await rdb.ref('bookings').orderByChild('date').equalTo(date).once('value');
+      let conflict = false;
+      snap.forEach(ch => {
+        const b = ch.val(),
+              bs = toMins(b.start), be = toMins(b.end);
+        if (sMin < be && eMin > bs) conflict = true;
+      });
+      if (conflict) { alert('이미 예약된 시간대가 있습니다.'); return; }
+      if (type === '개인연습') {
+      const todayStr = toYMD(new Date());
+      if (date !== todayStr) {
+        alert('개인연습은 당일만 예약 가능합니다.');
+        return;
       }
+    }
+      const dur = eMin - sMin;
+      if (dur < 30) return alert('최소 30분 이상 예약해야 합니다.');
+      if (dur > 180) return alert('최대 3시간까지 예약 가능합니다.');    
       
 
       const data = { type,date,start,end,user:auth.currentUser.uid ,username:auth.currentUser.displayName};
