@@ -27,7 +27,7 @@ function getNextWeekMonday8() {
   const mon8 = getThisWeekMonday8();
   const sun = new Date(mon8);
   sun.setDate(mon8.getDate() + 6);   // 월 + 6일 = 일
-  sun.setHours(23,59,59,999);
+  sun.setHours(22,59,59,999);
   return sun;
 }
 
