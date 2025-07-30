@@ -299,12 +299,12 @@ dateInput.setAttribute('max', nextYmd);
 
       if (type === '합주') {
     if (!team) {
-      alert('팀명을 입력해주세요.');
+      alert('팀명을 입력해 주세요.');
       return;
     }
   } else if (type === '개인연습') {
     if (!name) {
-      alert('이름을 입력해주세요.');
+      alert('이름을 입력해 주세요.');
       return;
     }
   }
@@ -325,13 +325,13 @@ dateInput.setAttribute('max', nextYmd);
               
    if (type=='개인연습'){
     if (now < mon830) {
-    alert('개인연습 예약은 매주 월요일 8시 30 이후에만 가능합니다.');
+    alert('개인연습 예약은 매주 월요일 00시 30분 이후에만 가능합니다.');
     return;
    } 
   }
   else{
     if (now < mon8) {
-        alert('합주 예약은 매주 월요일 오전 8시 이후에만 가능합니다.');
+        alert('합주 예약은 매주 월요일 00시 이후에만 가능합니다.');
         return;
       }
   }
