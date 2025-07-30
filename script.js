@@ -2,7 +2,7 @@
     const firebaseConfig = {
     apiKey: "AIzaSyCW5U1_JbfZYC2WvV9vQKmXVRl2JeqkJ6s",
     authDomain: "motdy-98e23.firebaseapp.com",
-    databaseURL: "https://motdy-98e23-default-rtdb.firebaseio.com",
+    databaseURL: "https://motdy-98e23-default-rtdb.firebaseio.com", //db 주소
     projectId: "motdy-98e23",
     storageBucket: "motdy-98e23.firebasestorage.app",
     messagingSenderId: "1048963561245",
@@ -20,8 +20,8 @@
   const day = now.getDay();  // 일=0, 월=1…
   const mon = new Date(now);
   mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
-  mon.setHours(0,0,0,0);
-  return mon;
+  mon.setHours(0,0,0,0);  // 매주 예약 조건 시간 시간 시, 분 초 ?
+   return mon;
 }
 function getNextWeekMonday8() {
   const mon8 = getThisWeekMonday8();
@@ -313,10 +313,10 @@ dateInput.setAttribute('max', nextYmd);
               const selDateStr = document.getElementById('form-date').value;           // "2025-05-26"
               const selDate = new Date(selDateStr + 'T00:00:00');                     // 자정 기준
               const mon8     = getThisWeekMonday8();                                  // 이번 주 월 08:00
-              const nextMon8 = getNextWeekMonday8();                                  // 다음 주 월 08:00
+              const nextMon8 = getNextWeekMonday8();                                  // 다음 주 일 08:00
               const now      = new Date();
               const mon830 = new Date(mon8);
-              mon830.setHours(0, 30, 0, 0);
+              mon830.setHours(0, 30, 0, 0); // mon830 은 개인연습 시작시간간
               const toYMD = d => [
   d.getFullYear(),
   String(d.getMonth()+1).padStart(2,'0'),
@@ -335,31 +335,8 @@ dateInput.setAttribute('max', nextYmd);
         return;
       }
   }
-  if (selDate < new Date(mon8.getFullYear(),mon8.getMonth(),mon8.getDate())
-      || selDate >  new Date(nextMon8.getFullYear(),nextMon8.getMonth(),nextMon8.getDate())) {
-    alert('예약 가능한 날짜는 이번 주 월요일부터 일요일까지입니다.');
-    return;
-  }
-              const toMins = t => t.split(':').reduce((h,m)=>h*60+parseInt(m),0),
-            sMin = toMins(start), eMin = toMins(end);
-      const snap = await rdb.ref('bookings').orderByChild('date').equalTo(date).once('value');
-      let conflict = false;
-      snap.forEach(ch => {
-        const b = ch.val(),
-              bs = toMins(b.start), be = toMins(b.end);
-        if (sMin < be && eMin > bs) conflict = true;
-      });
-      if (conflict) { alert('이미 예약된 시간대가 있습니다.'); return; }
-      if (type === '개인연습') {
-      const todayStr = toYMD(new Date());
-      if (date !== todayStr) {
-        alert('개인연습은 당일만 예약 가능합니다.');
-        return;
-      }
-    }
-      const dur = eMin - sMin;
-      if (dur < 30) return alert('최소 30분 이상 예약해야 합니다.');
-      if (dur > 180) return alert('최대 3시간까지 예약 가능합니다.');        
+  if (selDate < new Date(mon8.getFull간
+      if (dur > 180) return alert('최대 3시간까지 예약 가능합니다.');        //최대시간
       }
       
 
