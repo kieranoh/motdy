@@ -20,7 +20,7 @@
   const day = now.getDay();  // 일=0, 월=1…
   const mon = new Date(now);
   mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
-  mon.setHours(8,0,0,0);
+  mon.setHours(0,0,0,0);
   return mon;
 }
 function getNextWeekMonday8() {
@@ -316,7 +316,7 @@ dateInput.setAttribute('max', nextYmd);
               const nextMon8 = getNextWeekMonday8();                                  // 다음 주 월 08:00
               const now      = new Date();
               const mon830 = new Date(mon8);
-              mon830.setHours(8, 30, 0, 0);
+              mon830.setHours(0, 30, 0, 0);
               const toYMD = d => [
   d.getFullYear(),
   String(d.getMonth()+1).padStart(2,'0'),
@@ -359,7 +359,7 @@ dateInput.setAttribute('max', nextYmd);
     }
       const dur = eMin - sMin;
       if (dur < 30) return alert('최소 30분 이상 예약해야 합니다.');
-      if (dur > 60) return alert('최대 60분까지 예약 가능합니다.');        
+      if (dur > 180) return alert('최대 3시간까지 예약 가능합니다.');        
       }
       
 
