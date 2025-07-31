@@ -98,6 +98,10 @@ const key     = `${isoDate}_${label}`;
           sel.appendChild(opt);
         }
       }
+           const optMid = document.createElement('option');
+  optMid.value = '23:00';
+  optMid.textContent = '23:00';
+  sel.appendChild(optMid);
       
     }
 
