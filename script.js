@@ -27,7 +27,7 @@ function getNextWeekMonday8() {
   const mon8 = getThisWeekMonday8();
   const sun = new Date(mon8);
   sun.setDate(mon8.getDate() + 6);   // 월 + 6일 = 일
-  sun.setHours(22,59,59,999);
+  sun.setHours(23,59,59,999);
   return sun;
 }
 
@@ -68,7 +68,7 @@ for (let i = 0; i < 7; i++) {
           cur += 30;
         }
       });
-      for (let h=8; h<=23; h++) {
+      for (let h=8; h<=22; h++) {
         for (let m of [0,30]) {
           const tr = document.createElement('tr'), label = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
           tr.innerHTML = `<th>${label}</th>`;
@@ -88,7 +88,7 @@ const key     = `${isoDate}_${label}`;
     function populateTimeOptions(id) {
       const sel = document.getElementById(id);
       sel.innerHTML = '';
-      for (let h=8; h<=23; h++) {
+      for (let h=8; h<=22; h++) {
         for (let m of [0,30]) {
           const hh = String(h).padStart(2,'0'),
                 mm = String(m).padStart(2,'0'),
