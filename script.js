@@ -98,10 +98,7 @@ const key     = `${isoDate}_${label}`;
           sel.appendChild(opt);
         }
       }
-      const optMid = document.createElement('option');
-  optMid.value = '24:00';
-  optMid.textContent = '24:00';
-  sel.appendChild(optMid);
+      
     }
 
     document.addEventListener('DOMContentLoaded', () => {
