@@ -360,7 +360,12 @@ dateInput.setAttribute('max', nextYmd);
     }
       const dur = eMin - sMin;
       if (dur < 30) return alert('최소 30분 이상 예약해야 합니다.');
-      if (dur > 180) return alert('최대 3시간까지 예약 가능합니다.');    
+      if (type === '개인연습') {
+        if (dur > 60) return alert('개인연습은 최대 1시간까지 예약 가능합니다.');   
+      }
+      if (type === '합주'){   
+        if (dur > 120) return alert('합주는 2시간까지 예약 가능합니다.');
+      }
       }
       
 
