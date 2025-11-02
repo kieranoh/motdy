@@ -68,7 +68,7 @@ for (let i = 0; i < 7; i++) {
           cur += 30;
         }
       });
-      for (let h=5; h<=22; h++) {
+      for (let h=0; h<=23; h++) {   // 시작 시간 바꾸기1
         for (let m of [0,30]) {
           const tr = document.createElement('tr'), label = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
           tr.innerHTML = `<th>${label}</th>`;
@@ -88,7 +88,7 @@ const key     = `${isoDate}_${label}`;
     function populateTimeOptions(id) {
       const sel = document.getElementById(id);
       sel.innerHTML = '';
-      for (let h=5; h<=22; h++) {
+      for (let h=0; h<=23; h++) {  // 시작 시간 바꾸기2
         for (let m of [0,30]) {
           const hh = String(h).padStart(2,'0'),
                 mm = String(m).padStart(2,'0'),
@@ -99,8 +99,8 @@ const key     = `${isoDate}_${label}`;
         }
       }
            const optMid = document.createElement('option');
-  optMid.value = '23:00';
-  optMid.textContent = '23:00';
+  optMid.value = '24:00'; // 종료 시간1
+  optMid.textContent = '24:00'; // 종료 시간2
   sel.appendChild(optMid);
       
     }
